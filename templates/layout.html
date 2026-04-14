@@ -1,0 +1,37 @@
+<!-- More Info: https://flask.palletsprojects.com/en/stable/tutorial/templates/ -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!--  Important for proper sizing and responsive sizing of website  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <meta name="keywords" content="Bio-Informatica, Biologie, Informatica, Python">
+    <!--  Global Stylesheet  -->
+    <link rel="stylesheet" href="/static/main.css">
+    <!--  For JS Functionality ( global ) -->
+    <script src="/static/index.js"></script>
+    {% block meta %}{% endblock %}
+
+    <title>{% block title %}{% endblock %}</title>
+    <meta name="description" content="Bio-Informatics Website Made with Python">
+</head>
+
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/blast">Blast</a>
+    </nav>
+
+    <header>
+        {% block header %}{% endblock %}
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+
+</html>
