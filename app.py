@@ -11,6 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 
 DB_URL = os.getenv("DB_URL")
+PORT = os.getenv("PORT")
 
 @app.route('/')
 def index():
@@ -22,5 +23,5 @@ def blast():
 
 if __name__ == '__main__':
     # Start Server
-    app.run()
+    app.run(port=PORT)
 
