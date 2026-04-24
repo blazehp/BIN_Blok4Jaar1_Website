@@ -6,11 +6,13 @@ from numpy import array as np_array
 from mysql.connector.abstracts import MySQLCursorAbstract
 from database_config import db
 
+
 class DatabaseManager:
     """Class containing handful of utility functions to ease managing the database"""
+    
     def __init__(self, cur: MySQLCursorAbstract):
         self.cursor = cur
-        
+    
     def select(self, table: Literal["input", "raw_blast", "filtered_blast",
     "protein", "organism"], columns: str = "all"):
         """
@@ -33,11 +35,11 @@ class DatabaseManager:
             return res.flatten()
         except:
             print("Error selecting value(s) from table")
-        
+    
     def insert(self, table: Literal["input", "raw_blast", "filtered_blast",
     "protein", "organism"],
                data: dict[str,
-    Any]):
+               Any]):
         """
         Insert values for all columns in the specified table.
         
@@ -72,11 +74,11 @@ class DatabaseManager:
             
             values = data.values()
             self.cursor.execute(f"INSERT INTO {table} ({','.join(columns)}) "
-                           f"VALUES ("
-                        f"{','.join(values)})")
+                                f"VALUES ("
+                                f"{','.join(values)})")
         except:
             print("Error inserting into Database")
-            
+    
     def update(self):
         """Coming Soon..."""
         return None
