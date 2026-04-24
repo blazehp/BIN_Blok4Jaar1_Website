@@ -21,16 +21,19 @@ def blast():
   print(f"Is connected? {db.is_connected()}")
   return render_template('blast.html')
 
-def delete_all_tables(cur):
+def delete_table(cur, table_name: str = "all"):
   """
   DANGER: Only run when need to do a **full wipe**!
-  Delete all tables in the database.
+  Delete all or inputted table(s) in the database.
   """
-  cur.execute("DROP TABLE IF EXISTS input")
-  cur.execute("DROP TABLE IF EXISTS raw_blast")
-  cur.execute("DROP TABLE IF EXISTS protein")
-  cur.execute("DROP TABLE IF EXISTS organism")
-  cur.execute("DROP TABLE IF EXISTS filtered_blast")
+  if table_name == "all":
+    cur.execute("DROP TABLE IF EXISTS input")
+    cur.execute("DROP TABLE IF EXISTS raw_blast")
+    cur.execute("DROP TABLE IF EXISTS protein")
+    cur.execute("DROP TABLE IF EXISTS organism")
+    cur.execute("DROP TABLE IF EXISTS filtered_blast")
+  else:
+    cur.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 if __name__ == '__main__':
   cur = db.cursor()
@@ -40,7 +43,9 @@ if __name__ == '__main__':
   cur.execute("""
     CREATE TABLE IF NOT EXISTS input (
         id int PRIMARY KEY AUTO_INCREMENT,
-        sequence text NOT NULL
+        header varchar(255) UNIQUE NOT NULL,
+        read_1 text NOT NULL,
+        read_2 text NOT NULL
     );
   """)
   
