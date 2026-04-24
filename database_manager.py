@@ -70,13 +70,21 @@ class DatabaseManager:
                 if key not in columns:
                     raise ValueError("Invalid Column name")
             
-            cur = db.cursor()
             values = data.values()
-            cur.execute(f"INSERT INTO {table} ({','.join(columns)}) VALUES ("
+            self.cursor.execute(f"INSERT INTO {table} ({','.join(columns)}) "
+                           f"VALUES ("
                         f"{','.join(values)})")
         except:
             print("Error inserting into Database")
             
+    def update(self):
+        """Coming Soon..."""
+        return None
+    
+    def delete(self):
+        """Coming Soon..."""
+        return None
+    
     def custom_query(self, query: str, returns: bool = False):
         """
         Run a custom query into the database.
