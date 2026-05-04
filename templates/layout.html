@@ -8,7 +8,8 @@
     <!--  Important for proper sizing and responsive sizing of website  -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
-    <meta name="keywords" content="Bio-Informatica, Biologie, Informatica, Python">
+    <meta name="keywords"
+          content="Bio-Informatica, Biologie, Informatica, Python">
     <!--  Global Stylesheet  -->
     <link rel="stylesheet" href="/static/main.css">
     <!--  For JS Functionality ( global ) -->
@@ -16,22 +17,22 @@
     {% block meta %}{% endblock %}
 
     <title>{% block title %}{% endblock %}</title>
-    <meta name="description" content="Bio-Informatics Website Made with Python">
+    <meta name="description"
+          content="Bio-Informatics Website Made with Python">
 </head>
 
 <body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/blast">Blast</a>
-    </nav>
+<nav>
+    <a href="/">Home</a>
+    <a href="/blast">Blast</a>
+    <a href="/docs">Documentation</a>
+</nav>
 
-    <header>
-        {% block header %}{% endblock %}
-    </header>
+<header>
+    {% block header %}{% endblock %}
+</header>
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+{% block content %}{% endblock %}
 </body>
 
 </html>
