@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 
 
 def create_piechart(values: dict[str, int], title: str = "piechart"):
-
+    if not values:
+        raise ValueError("values are empty can't draw nothing")
     labels = values.keys()
     fig, ax = plt.subplots()
     ax.pie(values.values(), labels=labels)
