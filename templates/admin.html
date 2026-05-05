@@ -1,17 +1,91 @@
 {% extends 'layout.html' %}
 
 {% block meta %}
-    <link rel="stylesheet" href="/static/styles/admin.css">
+<link rel="stylesheet" href="/static/styles/admin.css">
+<script>
+    function onTableChange(select) {
+        const table = select.value;
+        window.location.href = `/admin?table=${table}`;
+    }
+
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete this row?");
+    }
+</script>
 {% endblock %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Admin Dashboard{% endblock %}
 
 {% block header %}
-    <h1>Admin Dashboard</h1>
+<h1>Admin Dashboard</h1>
 {% endblock %}
 
 {% block content %}
-    <main>
-        <i>Dashboard</i>
-    </main>
+<main class="admin-container">
+
+    <!-- Table Controls -->
+    <section class="admin-controls">
+        <div class="control-left">
+            <label for="db_table_selector">Table</label>
+            <select id="db_table_selector" onchange="onTableChange(this)">
+                {% for t in tables %}
+                    <option value="{{ t }}" {% if t == current_table %}selected{% endif %}>
+                        {{ t|capitalize }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="control-right">
+            <a href="/admin/create/{{ current_table }}" class="btn">+ Add Row</a>
+        </div>
+    </section>
+
+    <!-- Table Info -->
+    <section class="admin-info">
+        <p>
+            <!-- Using Jinja built-in functionality for styling -->
+            Showing: <strong>{{ current_table|capitalize }}</strong>
+            ({{ rows|length }} rows)
+        </p>
+    </section>
+
+    <!-- Data Table -->
+    <section class="admin-table">
+        {% if rows and columns %}
+        <table>
+            <thead>
+                <tr>
+                    {% for col in columns %}
+                        <th>{{ col }}</th>
+                    {% endfor %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for col in columns %}
+                        <td>{{ row[col] }}</td>
+                    {% endfor %}
+                    <td class="actions">
+                        <a href="/admin/edit/{{ current_table }}/{{ row['id'] }}" class="btn-sm">Edit</a>
+
+                        <form method="POST"
+                              action="/admin/delete/{{ current_table }}/{{ row['id'] }}"
+                              onsubmit="return confirmDelete()"
+                              style="display:inline;">
+                            <button type="submit" class="btn-sm danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p class="empty-state">No records found in this table.</p>
+        {% endif %}
+    </section>
+
+</main>
 {% endblock %}
