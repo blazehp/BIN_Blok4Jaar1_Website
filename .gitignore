@@ -217,3 +217,5 @@ __marimo__/
 
 # Disabling jetbrains .idea folder
 .idea/**
+# disable committing renders
+graphs/
