@@ -22,6 +22,15 @@ def create_barplot(values: dict[str, int],
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     plt.savefig(f"graphs/{title}.svg")
+def create_scatterplot(values: dict[str, int], title: str = "scatterplot",x_label: str = " ", y_label: str = " "):
+    if not values:
+        raise ValueError("values are empty can't draw chart")
+    fig, ax = plt.subplots()
+    ax.scatter(values.keys(), values.values())
+    plt.title(title)
+    plt.ylabel(y_label)
+    plt.xlabel(x_label)
+    plt.savefig(f"graphs/{title}.svg")
 
 
 if __name__ == "__main__":
