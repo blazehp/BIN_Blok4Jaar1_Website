@@ -1,6 +1,6 @@
 # https://flask.palletsprojects.com/en/stable/tutorial/layout/
 
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, request
 import os
 from dotenv import load_dotenv
 from database_config import db
@@ -28,10 +28,38 @@ def blast():
 def docs():
     return render_template('tech_doc.html')
 
-
-@app.route('/admin')
+# Admin Routes
+@app.route('/admin', methods=["GET", "POST"])
 def admin():
-    return render_template('admin.html')
+    tables = ["input", "raw_blast", "filtered_blast", "protein", "organism"]
+    current_table = request.args.get("table", "input")
+    
+    # Safety check (prevents injection via ?table=...)
+    if current_table not in tables:
+        current_table = "input"
+    
+    cursor = db.cursor()
+    
+    # Fetch data
+    cursor.execute(f"SELECT * FROM {current_table}")
+    rows_raw = cursor.fetchall()
+    
+    # Extract column names
+    columns = [desc[0] for desc in cursor.description]
+    
+    # Convert rows → dicts (IMPORTANT)
+    rows = []
+    for r in rows_raw:
+        row_dict = {}
+        for i, col in enumerate(columns):
+            row_dict[col] = r[i]
+        rows.append(row_dict)
+    
+    # db.close()
+    return render_template("admin.html", tables=tables,
+                           current_table=current_table, columns=columns,
+                           rows=rows)
+
 
 
 def delete_table(cur, table_name: str = "all"):
