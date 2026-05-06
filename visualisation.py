@@ -3,21 +3,34 @@ import matplotlib.pyplot as plt
 
 def create_piechart(values: dict[str, int], title: str = "piechart"):
     if not values:
-        raise ValueError("values are empty can't draw nothing")
+        raise ValueError("values are empty can't draw chart")
     labels = values.keys()
     fig, ax = plt.subplots()
     ax.pie(values.values(), labels=labels)
     plt.title(title)
-    plt.plot(values.keys(), values.values())
+    plt.savefig(f"graphs/{title}.svg")
+
+
+def create_barplot(values: dict[str, int],
+                   title: str = "barplot",
+                   x_label: str = " ", y_label: str = " "):
+    if not values:
+        raise ValueError("values are empty ,can't draw chart")
+    fig, ax = plt.subplots()
+    ax.bar(values.keys(), values.values())
+    plt.title(title)
+    plt.ylabel(y_label)
+    plt.xlabel(x_label)
     plt.savefig(f"graphs/{title}.svg")
 
 
 if __name__ == "__main__":
-    dict = {
+    data = {
         "dingdong": 1,
         "ding": 2,
         "test": 3,
         "qwerty": 3
 
     }
-    create_piechart(dict)
+    create_piechart(data)
+    create_barplot(data)
