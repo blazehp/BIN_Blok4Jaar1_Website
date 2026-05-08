@@ -83,153 +83,59 @@ if __name__ == '__main__':
     
     # -- Input table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS input
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    header
-                    varchar
-                (
-                    255
-                ) UNIQUE NOT NULL,
-                    read_1 text NOT NULL,
-                    read_2 text NOT NULL
+                CREATE TABLE IF NOT EXISTS input (
+                    id int PRIMARY KEY AUTO_INCREMENT,
+                    sequence longtext NOT NULL,
+                    run_id varchar(255) NOT NULL
                     );
                 """)
     
     # -- Raw Blast table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS raw_blast
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    e_value
-                    text
-                    NOT
-                    NULL,
-                    accession_code
-                    text
-                    NOT
-                    NULL,
-                    protein_name
-                    text
-                    NOT
-                    NULL,
-                    organism_name
-                    text
-                    NOT
-                    NULL
+                CREATE TABLE IF NOT EXISTS raw_blast (
+                    id int PRIMARY KEY AUTO_INCREMENT,
+                    e_value varchar(255) NOT NULL,
+                    accession_code varchar(255) NOT NULL,
+                    protein_name varchar(255) NOT NULL,
+                    organism_name text NOT NULL
                 );
                 """)
     
     # -- Filtered Blast table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS filtered_blast
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    e_value
-                    text
-                    NOT
-                    NULL,
-                    identity_perc
-                    int
-                    NOT
-                    NULL,
-                    accession_code
-                    varchar
-                (
-                    255
-                ) UNIQUE NOT NULL
+                CREATE TABLE IF NOT EXISTS filtered_blast (
+                    id int PRIMARY KEY AUTO_INCREMENT,
+                    e_value text NOT NULL,
+                    identity_perc int NOT NULL,
+                    accession_code varchar(255) UNIQUE NOT NULL
                     );
                 """)
     
     # -- Protein table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS protein
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    protein_name
-                    text
-                    NOT
-                    NULL,
-                    protein_function
-                    text
-                    NOT
-                    NULL,
-                    hit_id
-                    int
-                    NOT
-                    NULL,
+                CREATE TABLE IF NOT EXISTS protein (
+                    id int PRIMARY KEY AUTO_INCREMENT,
+                    protein_name text NOT NULL,
+                    protein_function text NOT NULL,
+                    hit_id int NOT NULL,
                     -- Constraints
-                    CONSTRAINT
-                    prot_blast_hit
-                    FOREIGN
-                    KEY
-                (
-                    hit_id
-                )
-                    REFERENCES filtered_blast
-                (
-                    id
-                )
+                    CONSTRAINT prot_blast_hit FOREIGN KEY(hit_id)
+                    REFERENCES filtered_blast(id)
                     );
                 """)
     
     # -- Organism table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS organism
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    organism_name
-                    text
-                    NOT
-                    NULL,
-                    family
-                    text
-                    NOT
-                    NULL,
-                    sex
-                    text
-                    NOT
-                    NULL,
-                    species
-                    text
-                    NOT
-                    NULL,
-                    hit_id
-                    int
-                    NOT
-                    NULL,
+                CREATE TABLE IF NOT EXISTS organism (
+                    id int PRIMARY KEY AUTO_INCREMENT,
+                    organism_name varchar(255) NOT NULL,
+                    family text NOT NULL,
+                    sex text NOT NULL,
+                    species text NOT NULL,
+                    hit_id int NOT NULL,
                     -- Constraints
-                    CONSTRAINT
-                    org_blast_hit
-                    FOREIGN
-                    KEY
-                (
-                    hit_id
-                )
-                    REFERENCES filtered_blast
-                (
-                    id
-                )
+                    CONSTRAINT org_blast_hit FOREIGN KEY (hit_id)
+                    REFERENCES filtered_blast(id)
                     );
                 """)
     
