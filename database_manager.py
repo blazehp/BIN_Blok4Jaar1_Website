@@ -4,29 +4,29 @@ from typing import Literal, Any
 
 from numpy import array as np_array
 from mysql.connector.abstracts import MySQLCursorAbstract
-from database_config import db
 
-
-class DatabaseManager:
+class _DatabaseManager:
     """Class containing handful of utility functions to ease managing the database"""
     
-    def __init__(self, cur: MySQLCursorAbstract):
+    def __init__(self, cur: MySQLCursorAbstract, table: Literal["input",
+    "raw_blast", "filtered_blast", "protein", "organism"],
+                 data: dict[str,Any]):
         self.cursor = cur
+        self.table = table
+        self.data = data
     
-    def select(self, table: Literal["input", "raw_blast", "filtered_blast",
-    "protein", "organism"], columns: str = "all"):
+    def select(self, columns: str = "all"):
         """
         Select all or specified column(s) from selected table.
         
         Parameters:
-            table (str): Table to fetch from
             columns (str): Optional param to select all or specific column(s)
         """
         try:
             if columns == "all":
-                self.cursor.execute(f"SELECT * FROM {table}")
+                self.cursor.execute(f"SELECT * FROM {self.table}")
             else:
-                self.cursor.execute(f"SELECT {columns} FROM {table}")
+                self.cursor.execute(f"SELECT {columns} FROM {self.table}")
             
             res = []
             while self.cursor.nextset():
@@ -36,55 +36,47 @@ class DatabaseManager:
         except:
             print("Error selecting value(s) from table")
     
-    def insert(self, table: Literal["input", "raw_blast", "filtered_blast",
-    "protein", "organism"],
-               data: dict[str,
-               Any]):
-        """
-        Insert values for all columns in the specified table.
-        
-        Parameters:
-          table (str): The table name to insert into.
-          data (dict[str, Any]): Data to insert into selected table.
-          **Keys** is column name and **Values** is value(s) for that column.
-        """
+    def insert(self):
+        """Insert values for all columns in table."""
         try:
-            columns = []
-            match table:
-                case "input":
-                    columns = ["header", "read_1", "read_2"]
-                case "raw_blast":
-                    columns = ["e_value", "accession_code", "protein_name",
-                               "organism_name"]
-                case "filtered_blast":
-                    columns = ["e_value", "identity_perc", "accession_code"]
-                case "protein":
-                    columns = ["protein_name", "protein_function", "hit_id"]
-                case "organism":
-                    columns = ["organism_name", "family", "sex", "species",
-                               "hit_id"]
-            
-            if len(columns) == 0:
-                raise ValueError("Table Name not Found")
-            
-            # Safety fallback for when inputted incorrect column(s)
-            for key in data.keys():
-                if key not in columns:
-                    raise ValueError("Invalid Column name")
-            
-            values = data.values()
-            self.cursor.execute(f"INSERT INTO {table} ({','.join(columns)}) "
-                                f"VALUES ("
-                                f"{','.join(values)})")
+            columns = ','.join([key for key in self.data.keys()])
+            values = ','.join([f"'{v}'" for v in self.data.values()])
+            query = f"INSERT INTO {self.table} ({columns}) VALUES ({values})"
+            self.cursor.execute(query)
         except:
             print("Error inserting into Database")
     
     def update(self):
-        """Coming Soon..."""
+        """
+        Update columns in table.
+        
+        **NOTE**: If a column's value is `None`, it will be omitted from the
+        query.
+        """
+        # Remove empty keys. There are not meant to be updated
+        for column in self.data.keys():
+            if self.data[column] is None:
+                self.data.pop(column)
+        
+        # Update columns
+        for (column, value) in self.data.items():
+            if type(value) == int or type(value) == float:
+                query = f"UPDATE {self.table} SET {column} = {value}"
+            else:
+                query = f"UPDATE {self.table} SET {column} = '{value}'"
+                
+            self.cursor.execute(query)
         return None
     
-    def delete(self):
-        """Coming Soon..."""
+    def delete(self, record_id: int):
+        """
+        Delete a record from the table
+        
+        Parameters:
+            record_id (int): The id of the record to delete
+        """
+        query = f"DELETE FROM {self.table} WHERE id = {record_id}"
+        self.cursor.execute(query)
         return None
     
     def custom_query(self, query: str, returns: bool = False):
@@ -105,3 +97,57 @@ class DatabaseManager:
         
         self.cursor.execute(query)
         return None
+    
+class InputTable(_DatabaseManager):
+    def __init__(self, cur: MySQLCursorAbstract):
+        self.column: dict[Literal["sequence", "run_id"], Any] = {
+            "sequence": None,
+            "run_id": None
+        }
+        super().__init__(cur, "input", self.column)
+        
+class RawBlastTable(_DatabaseManager):
+    def __init__(self, cur: MySQLCursorAbstract):
+        self.column: dict[Literal["e_value", "accession_code",
+        "protein_name", "organism_name"],
+        Any] = {
+            "e_value": None,
+            "accession_code": None,
+            "protein_name": None,
+            "organism_name": None,
+        }
+        super().__init__(cur, "raw_blast", self.column)
+        
+class FilteredBlast(_DatabaseManager):
+    def __init__(self, cur: MySQLCursorAbstract):
+        self.column: dict[Literal["e_value", "identity_perc",
+        "accession_code"], Any] = {
+            "e_value": None,
+            "identity_perc": None,
+            "accession_code": None
+        }
+        super().__init__(cur, "filtered_blast", self.column)
+        
+class ProteinTable(_DatabaseManager):
+    def __init__(self, cur: MySQLCursorAbstract):
+        self.column: dict[Literal["protein_name", "protein_function",
+        "hit_id"],
+        Any] = {
+            "protein_name": None,
+            "protein_function": None,
+            "hit_id": None
+        }
+        super().__init__(cur, "protein", self.column)
+
+class OrganismTable(_DatabaseManager):
+    def __init__(self, cur: MySQLCursorAbstract):
+        self.column: dict[Literal["organism_name", "family", "sex",
+        "species", "hit_id"], Any] = {
+            "organism_name": None,
+            "family": None,
+            "sex": None,
+            "species": None,
+            "hit_id": None
+        }
+        super().__init__(cur, "organism", self.column)
+        
