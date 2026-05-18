@@ -9,109 +9,82 @@ import requests
 from requests import Response
 import asyncio
 from asyncio import Task
-from Bio import Blast
+from Bio import Blast, UniProt
 from Bio.Blast import NCBIXML, NCBIWWW
 from time import sleep
-from database_manager import DatabaseManager
-from database_manager import db
+from database_config import db
+from database_manager import InputTable, RawBlastTable
 import re
 import time
 
 Blast.email = "mmj.guillorit@sudent.han.nl"
 
 
-def extract_organism(hit_def: str) -> str:
-    return hit_def
-
-
-
-
-def query(sequence : str ):
+def query(sequence : str):
     """
     :param sequence:
+    :return: Query_id , accession_code, description, organism,
+    score , e-value, identities,
 
-    :return: returns a string
     """
+
     print(f"Querying {sequence}")
-    results_handle = NCBIWWW.qblast(program="blastx",database="nr",sequence = sequence)
-    #results retrieved
+
+    #   Initialize DB cursor and raw blast data table
+    cur = db.cursor()
+    insert_input = InputTable(cur)
+
+
+    #   query NCBI database and parse out the resulting HTML file
+    results_handle = NCBIWWW.qblast(program="blastx", database="nr",
+                                    sequence=sequence)
     blast_records = NCBIXML.parse(results_handle)
     blast_record = next(blast_records)
-    print(blast_record)
+
+    #recover query identification code
+    query_id = blast_record.query_id
+
+    #input query id and sequence into db
+    insert_input.column['sequence'] = sequence
+    insert_input.column['run_id'] = query_id
+    insert_input.insert()
+    db.commit()
+    cur.close()
+
+    #Loop through resulting hits
     for alignment in blast_record.alignments:
+        cur = db.cursor()
+        insert_raw = RawBlastTable(cur)
+
+        #Find accession_code (2), description (3), organism from hit (4)
+        name = re.search(pattern='(\|([.\w\d]*)\|)(.*?)(\[(.*?)\])',
+                         string=alignment.title).group(2, 3, 5)
+        accession_code = name[0]
+        description = name[1]
+        organism = name[2]
+
+         #loop through HSP from alignment (n)
         for hsp in alignment.hsps:
-            print(f"Hit Title: {alignment.title}")
-            print(f"Hit Score: {hsp.escore}")
-            print(f"Hit Type : {hsp.hit_type}")
-            print(f"Hit escore: {hsp.escore}")
+            hit_score = hsp.score
+            escore = hsp.expect
+            bits = hsp.bits
+            identities = hsp.identities
+            insert_raw.column['accession_code'] = accession_code
+            insert_raw.column['description'] = description
+            insert_raw.column['organism_name'] = organism
+            insert_raw.column['e_value'] = escore
+            insert_raw.column['bits'] = bits
+            insert_raw.column['identity_perc'] = identities
+            insert_raw.column['score'] = hit_score
+            insert_raw.column['protein_name'] = "protein name"
+            insert_raw.insert()
+            db.commit()
+            cur.close()
+    # for alignment in blast_record.alignments:
+    #     for hsp in alignment.hsps:
+    #         print(f"Alignment: {alignment} evalue {hsp.expect}")
+    #
+    # for description in blast_record.descriptions:
+    #      print(f"Description: {description}")
     return
 
-
-
-
-
-
-
-
-def query_excel(data_frames : tuple ) -> dict:
-    """
-    :param data_frames:
-
-    :return: results of each sequence blast into a df
-    """
-    df_1 = data_frames[0]
-    df_2 = data_frames[1]
-    template = {
-        "e_value": "",
-        "accession_code": "",
-        "protein_name": "",
-        "organism_name": "",
-    }
-    for index, row in (df_1.iterrows(), df_2.iterrows()):
-        print(f"Querying {df_1.iloc[index, 0]}")
-        results_handle = NCBIWWW.qblast("blastx", "nt", df_1.iloc[index][1])
-
-    cur = db.cursor()
-    dm = DatabaseManager(cur)
-    dm.insert("raw_blast", template)
-    return
-
-
-
-
-if __name__ == "__main__":
-    queried = query('ACATTTGCTTCTGACACAACTGTGTTCACTAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGTCTGCCGTTACTGCCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGCTGCTGGTGGTCTACCCTTGGACCCAGAGGTTCTTTGAGTCCTTTGGGGATCTGTCCACTCCTGATGCTGTTATGGGCAACCCTAAGGTGAAGGCTCATGGCAAGAAAGTGCTCGGTGCCTTTAGTGATGGCCTGGCTCACCTGGACAACCTCAAGGGCACCTTTGCCACACTGAGTGAGCTGCACTGTGACAAGCTGCACGTGGATCCTGAGAACTTCAGGCTCCTGGGCAACGTGCTGGTCTGTGTGCTGGCCCATCACTTTGGCAAAGAATTCACCCCACCAGTGCAGGCTGCCTATCAGAAAGTGGTGGCTGGTGTGGCTAATGCCCTGGCCCACAAGTATCACTAAGCTCGCTTTCTTGCTGTCCAATTTCTATTAAAGGTTCCTTTGTTCCCTAAGTCCAACTACTAAACTGGGGGATATTATGAAGGGCCTTGAGCATCTGGATTCTGCCTAATAAAAAACATTTATTTTCATTGCAA')
-
-###
-""""
-from Bio.Blast import NCBIWWW
-from Bio.Blast import NCBIXML
-
-sequence = "ACTGCTGATCGATCGATCGTAGCTAGCTAGCTAGCTAGCTAGCTAG"
-
-# Perform a BLAST search
-result_handle = NCBIWWW.qblast("blastn", "nt", sequence)
-
-# Parse and print BLAST results
-blast_record = NCBIXML.read(result_handle)
-for alignment in blast_record.alignments:
-    for hsp in alignment.hsps:
-        print(f"Alignment Title: {alignment.title}")
-        print(f"Alignment Score: {hsp.score}")
-"""
-
-
-"""
-async def fetch_status(url:str) -> dict:
-    print(f"Fetching status for: {url}")
-    response :Response = await asyncio.to_thread(requests.get,url,None)
-    return {'status': response.status_code, 'url':url}
-
-async def main():
-    apple_task: Task[dict] = asyncio.create_task(fetch_status("https://apple.com"))
-    google_task: Task[dict] = asyncio.create_task(fetch_status("https://google.com"))
-    apple_status : dict = await apple_task
-    google_status : dict = await google_task
-    print(apple_status)
-    print(google_status)
-    """
