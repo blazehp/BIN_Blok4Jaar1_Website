@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 
 
+
 def create_piechart(values: dict[str, int], title: str = "piechart"):
     if not values:
         raise ValueError("values are empty can't draw chart")
@@ -33,6 +34,11 @@ def create_scatterplot(values: dict[str, int], title: str = "scatterplot", x_lab
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     plt.savefig(f"graphs/{title}.svg")
+
+def create_sunburstplot(values: list[tuple], title: str = "sunburstplot", level)
+    ax = ax or plt.subplots(111,projection = "polar")
+    if level == 0 and len(values) == 1:
+        label, values,subnodes = values[0]
 
 
 if __name__ == "__main__":
