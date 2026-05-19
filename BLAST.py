@@ -1,10 +1,6 @@
 import sys
-
-from contourpy.util import data
-
 import parsing as data_frame
 import pandas as pd
-from pandas import DataFrame
 import requests
 from requests import Response
 import asyncio
@@ -15,7 +11,8 @@ from time import sleep
 from database_config import db
 from database_manager import InputTable, RawBlastTable
 import re
-import time
+from parsing import parse_excel
+
 
 Blast.email = "mmj.guillorit@sudent.han.nl"
 
@@ -63,7 +60,7 @@ def query(sequence : str):
         description = name[1]
         organism = name[2]
 
-         #loop through HSP from alignment (n)
+        #loop through HSP from alignment (n)
         for hsp in alignment.hsps:
             hit_score = hsp.score
             escore = hsp.expect
@@ -80,11 +77,41 @@ def query(sequence : str):
             insert_raw.insert()
             db.commit()
             cur.close()
-    # for alignment in blast_record.alignments:
-    #     for hsp in alignment.hsps:
-    #         print(f"Alignment: {alignment} evalue {hsp.expect}")
-    #
-    # for description in blast_record.descriptions:
-    #      print(f"Description: {description}")
+
     return
 
+
+async def fill_db(path:str):
+    """
+    loop through all sequences and push them to database
+
+    :return:
+    """
+    data_stream = parse_excel(file_path=path,sheet_name="groep5")
+
+    df_1 = data_stream[0]
+    df_2 = data_stream[1]
+
+    sequences = pd.concat([
+        df_1.iloc[:, 1],
+        df_2.iloc[:, 1]
+    ]).dropna().tolist()
+
+    for it in sequences:
+        await push_to_db(it)
+    return
+
+
+async def push_to_db(sequence: str):
+    """Add sequence to database"""
+    cur = db.cursor()
+    insert_input = InputTable(cur)
+    insert_input.column['sequence'] = sequence
+    insert_input.insert()
+    db.commit()
+    cur.close()
+    return
+
+
+if __name__ == "__main__":
+    asyncio.run(fill_db())

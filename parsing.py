@@ -12,7 +12,3 @@ def parse_excel(file_path: str, sheet_name: str) -> tuple[
     return read_1, read_2
 
 
-if __name__ == '__main__':
-    example = parse_excel(
-        "C:\\Users\\maxim\\Downloads\\Course4_dataset_v04.xlsx", "groep5")
-    print(example)
