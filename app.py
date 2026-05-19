@@ -51,10 +51,10 @@ def admin():
     
     # Convert rows → dicts (IMPORTANT)
     rows = []
-    for r in rows_raw:
+    for row in rows_raw:
         row_dict = {}
-        for i, col in enumerate(columns):
-            row_dict[col] = r[i]
+        for index, col in enumerate(columns):
+            row_dict[col] = row[index]
         rows.append(row_dict)
     
     # db.close()
@@ -95,7 +95,6 @@ def delete_table(cur, table_name: str = "all"):
 if __name__ == '__main__':
     cur = db.cursor()
     # Create Database Tables on server launch
-    delete_table(cur)
     
     # -- Input table
     cur.execute("""

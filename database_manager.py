@@ -40,7 +40,7 @@ class _DatabaseManager:
         """Insert values for all columns in table."""
         try:
             columns = ','.join([key for key in self.data.keys()])
-            values = ','.join([f"'{v}'" for v in self.data.values()])
+            values = ','.join([f"'{value}'" for value in self.data.values()])
             query = f"INSERT INTO {self.table} ({columns}) VALUES ({values})"
             self.cursor.execute(query)
         except:
