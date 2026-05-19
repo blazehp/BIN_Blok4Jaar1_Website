@@ -1,13 +1,7 @@
-import sys
-import parsing as data_frame
 import pandas as pd
-import requests
-from requests import Response
 import asyncio
-from asyncio import Task
 from Bio import Blast, UniProt
 from Bio.Blast import NCBIXML, NCBIWWW
-from time import sleep
 from database_config import db
 from database_manager import InputTable, RawBlastTable
 import re
@@ -17,7 +11,7 @@ from parsing import parse_excel
 Blast.email = "mmj.guillorit@sudent.han.nl"
 
 
-def query(sequence : str):
+async def query(sequence : str):
     """
     :param sequence:
     :return: Query_id , accession_code, description, organism,
@@ -44,7 +38,7 @@ def query(sequence : str):
     #input query id and sequence into db
     insert_input.column['sequence'] = sequence
     insert_input.column['run_id'] = query_id
-    insert_input.insert()
+    insert_input.update()
     db.commit()
     cur.close()
 
@@ -113,5 +107,3 @@ async def push_to_db(sequence: str):
     return
 
 
-if __name__ == "__main__":
-    asyncio.run(fill_db())

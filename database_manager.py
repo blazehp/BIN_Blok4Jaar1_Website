@@ -108,9 +108,10 @@ class InputTable(_DatabaseManager):
         
 class RawBlastTable(_DatabaseManager):
     def __init__(self, cur: MySQLCursorAbstract):
-        self.column: dict[Literal["e_value","identity_perc", "accession_code",
+        self.column: dict[Literal["run_id","e_value","identity_perc", "accession_code",
         "protein_name","description", "organism_name","score","bits"],
         Any] = {
+            "run_id": None,
             "e_value": None,
             "identity_perc": None,
             "accession_code": None,
@@ -124,14 +125,18 @@ class RawBlastTable(_DatabaseManager):
         
 class FilteredBlast(_DatabaseManager):
     def __init__(self, cur: MySQLCursorAbstract):
-        self.column: dict[Literal["e_value","identity_perc", "accession_code",
-        "protein_name", "organism_name","score","description"], Any] = {
+        self.column: dict[Literal["run_id","e_value","identity_perc", "accession_code",
+        "protein_name","description", "organism_name","score","bits"],
+        Any] = {
+            "run_id": None,
             "e_value": None,
             "identity_perc": None,
             "accession_code": None,
             "protein_name": None,
             "organism_name": None,
-            "score": None
+            "score": None,
+            "description": None,
+            "bits": None
         }
         super().__init__(cur, "filtered_blast", self.column)
         
