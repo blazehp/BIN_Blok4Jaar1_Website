@@ -12,30 +12,34 @@ def create_piechart(values: dict, title: str):
     plt.show()
 
 
-def create_sunburst_chart(values: list, title: str, level=0, total=np.pi * 2,ax = None):
-    ax = ax or plt.subplot(111)
-    if level == 0:
-        label, values, subnodes = values[0]
-        ax.bar([0],[0, 5], [np.pi * 2])
-        ax.text(0,0,label,ha = 'center',va='center')
-    elif nodes:
-        diameter = np.pi * 2 / total
-        label = []
-        widths =[]
+def create_sunburst_chart(values: list[tuple],
+                          title: str, level=0,
+                          total=np.pi * 2, ax=None):
+    ax = ax or plt.subplot(111, title=title, projection='polar')
 
-    print(list(values.keys()))
-    keys = np.array(list(values.keys()))
+    if level == 0 and len(values) == 1:
+        label, values, subnodes = values[0]
+        ax.bar([0], [0, 5], [np.pi * 2])
+        ax.text(0, 0, label, ha='center', va='center')
+        create_sunburst_chart(subnodes, total=total, title=title,ax=ax)
+    elif values:
+        diameter = np.pi * 2 / total
+        labels = []
+        widths = []
+        for label, value, subnodes in values:
+            labels.append(label)
+            widths.append(value * diameter)
 
 
 if __name__ == '__main__':
-    dict = {
+    species_dict = {
         "homo sapiens": 5,
         "lasius niger": 6,
         "Griseotyrannus aurantioatrocristatus": 42,
         "boops boops": 8
 
     }
-    create_piechart(dict, title="testdata")
+    create_piechart(species_dict, title="testdata")
     data = [
         ('eukarya', 100, [
             ('fungi', 70, [
