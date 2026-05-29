@@ -1,6 +1,7 @@
 # https://flask.palletsprojects.com/en/stable/tutorial/layout/
 
-from flask import Flask, render_template, redirect, request
+# from flask import Flask, render_template, redirect, request
+from quart import Quart, render_template, redirect, request
 import os
 from dotenv import load_dotenv
 from database_config import db
@@ -11,32 +12,31 @@ from asyncio import sleep
 # This is the .env when in development mode
 load_dotenv()
 
-app = Flask(__name__)
+app = Quart(__name__)
 PORT = os.getenv("PORT")
 
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+async def index():
+    return await render_template('index.html')
 
 
 @app.route('/blast')
-def blast():
+async def blast():
     print(f"Is connected? {db.is_connected()}")
-    return render_template('blast.html')
+    return await render_template('blast.html')
 
 
 @app.route('/docs')
-def docs():
-    return render_template('tech_doc.html')
+async def docs():
+    return await render_template('tech_doc.html')
 
 # Admin Routes
 @app.route('/admin', methods=["GET", "POST"])
-def admin():
+async def admin():
     tables = ["input", "raw_blast", "filtered_blast", "protein", "organism"]
     current_table = request.args.get("table", "input")
     
-    # Safety check (prevents injection via ?table=...)
     if current_table not in tables:
         current_table = "input"
     
@@ -49,7 +49,7 @@ def admin():
     # Extract column names
     columns = [desc[0] for desc in cursor.description]
     
-    # Convert rows → dicts (IMPORTANT)
+    # Convert rows --> dicts (IMPORTANT)
     rows = []
     for row in rows_raw:
         row_dict = {}
@@ -58,7 +58,7 @@ def admin():
         rows.append(row_dict)
     
     # db.close()
-    return render_template("admin.html", tables=tables,
+    return await render_template("admin.html", tables=tables,
                            current_table=current_table, columns=columns,
                            rows=rows)
 
