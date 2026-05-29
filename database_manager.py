@@ -70,7 +70,7 @@ class _DatabaseManager:
             # *This was before, a pop. But that caused dict size change
             # during runtime.
             if self.data[column] is None:
-                pass
+                continue
             
             if type(value) == int or type(value) == float:
                 query = (f"UPDATE {self.table} SET {column} = {value} WHERE "
