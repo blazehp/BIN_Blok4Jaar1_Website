@@ -61,11 +61,9 @@ async def admin():
     return await render_template("admin.html", tables=tables,
                            current_table=current_table, columns=columns,
                            rows=rows)
-
-@app.route('/run_blast', methods=["GET"])
-async def run_blast():
+async def blast_querying():
     cursor = db.cursor()
-
+    
     # Fetch data
     cursor.execute(f"SELECT id ,sequence FROM input WHERE run_id is NULL")
     non_blasted_sequences = cursor.fetchall()
@@ -78,6 +76,11 @@ async def run_blast():
     
     cursor.close()
     return
+
+@app.route('/run_blast', methods=["GET"])
+async def run_blast():
+    app.add_background_task(blast_querying)
+    return "Blasting..."
 
 
 def delete_table(cur, table_name: str = "all"):
