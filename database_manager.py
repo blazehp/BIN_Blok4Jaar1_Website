@@ -40,30 +40,44 @@ class _DatabaseManager:
         """Insert values for all columns in table."""
         try:
             columns = ','.join([key for key in self.data.keys()])
-            values = ','.join([f"'{value}'" for value in self.data.values()])
-            query = f"INSERT INTO {self.table} ({columns}) VALUES ({values})"
-            self.cursor.execute(query)
+            # Using placeholders + tuple data to allow None values
+            value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
+            values = tuple(self.data.values())
+            if None in values:
+                raise ValueError
+            query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
+            self.cursor.execute(query, params=values)
+        except ValueError:
+            print("Check inputted values. Cannot insert NONE values")
         except:
             print("Error inserting into Database")
     
-    def update(self):
+    def update(self, position, pvalue):
         """
         Update columns in table.
         
         **NOTE**: If a column's value is `None`, it will be omitted from the
         query.
-        """
-        # Remove empty keys. There are not meant to be updated
-        for column in self.data.keys():
-            if self.data[column] is None:
-                self.data.pop(column)
         
+        Parameters:
+            position (str): The column name to update at
+            pvalue (Any): The value of the column.
+            
+        """
         # Update columns
         for (column, value) in self.data.items():
+            # Remove empty keys. There are not meant to be updated
+            # *This was before, a pop. But that caused dict size change
+            # during runtime.
+            if self.data[column] is None:
+                pass
+            
             if type(value) == int or type(value) == float:
-                query = f"UPDATE {self.table} SET {column} = {value}"
+                query = (f"UPDATE {self.table} SET {column} = {value} WHERE "
+                         f"{position} = {pvalue}")
             else:
-                query = f"UPDATE {self.table} SET {column} = '{value}'"
+                query = (f"UPDATE {self.table} SET {column} = '{value}' WHERE"
+                         f" {position} = {pvalue}")
                 
             self.cursor.execute(query)
         return None
