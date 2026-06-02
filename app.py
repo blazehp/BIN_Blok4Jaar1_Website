@@ -1,6 +1,6 @@
 # https://flask.palletsprojects.com/en/stable/tutorial/layout/
 
-# from flask import Flask, render_template, redirect, request
+from _webcreds import write_creds as write_env
 from quart import Quart, render_template, redirect, request
 import os
 from dotenv import load_dotenv
@@ -82,6 +82,18 @@ async def run_blast():
     app.add_background_task(blast_querying)
     return "Blasting..."
 
+@app.route("/_creds", methods=["GET"])
+async def _creds():
+    db_creds = {
+        "user": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD"),
+        "host": os.getenv("DEV_DB_HOST"),
+        "port": os.getenv("DEV_DB_PORT"),
+        "database": os.getenv("DB_DATABASE"),
+        "pool_name": os.getenv("DB_POOL_NAME"),
+        "pool_size": int(os.getenv("DB_POOL_SIZE")),
+    }
+    return db_creds
 
 def delete_table(cur, table_name: str = "all"):
     """
