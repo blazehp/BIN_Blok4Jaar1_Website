@@ -82,7 +82,7 @@ async def run_blast():
     app.add_background_task(blast_querying)
     return "Blasting..."
 
-@app.route
+@app.route("/_creds", methods=["GET"])
 async def _creds():
     db_creds = {
         "user": os.getenv("DB_USER"),
