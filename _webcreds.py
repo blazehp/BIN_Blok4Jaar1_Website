@@ -8,15 +8,18 @@ def get_creds():
 
 def write_creds():
     creds = get_creds()
-    with open(".env_new", "w") as file:
-        content = f"""
-        DB_USER = {creds.user}
-        DB_PASSWORD = {creds.password}
-        DB_HOST = {creds.host}
-        DB_PORT = {creds.port}
-        DB_DATABASE = {creds.database}
-        DB_POOL_NAME = {creds.pool_name}
-        DB_POOL_SIZE = {creds.pool_size}
+    with open(".env", "w") as file:
+        content = f"""DB_USER="{creds["user"]}"
+        DB_PASSWORD="{creds["password"]}"
+        DB_HOST="{creds["host"]}"
+        DB_PORT="{creds["port"]}"
+        DB_DATABASE="{creds["database"]}"
+        DB_POOL_NAME="{creds["pool_name"]}"
+        DB_POOL_SIZE="{creds["pool_size"]}"
+        PORT="3000"
         """
         file.write(content)
     return
+
+if __name__ == "__main__":
+    write_creds()

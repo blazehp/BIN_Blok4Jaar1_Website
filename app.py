@@ -87,8 +87,8 @@ async def _creds():
     db_creds = {
         "user": os.getenv("DB_USER"),
         "password": os.getenv("DB_PASSWORD"),
-        "host": os.getenv("DB_HOST"),
-        "port": os.getenv("DB_PORT"),
+        "host": os.getenv("DEV_DB_HOST"),
+        "port": os.getenv("DEV_DB_PORT"),
         "database": os.getenv("DB_DATABASE"),
         "pool_name": os.getenv("DB_POOL_NAME"),
         "pool_size": int(os.getenv("DB_POOL_SIZE")),
@@ -112,7 +112,6 @@ def delete_table(cur, table_name: str = "all"):
 
 
 if __name__ == '__main__':
-    write_env()
     cur = db.cursor()
     # Create Database Tables on server launch
     
