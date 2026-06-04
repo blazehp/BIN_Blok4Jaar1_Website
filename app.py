@@ -2,11 +2,17 @@
 import asyncio
 import time
 from _webcreds import write_creds as write_env
-write_env()
+from dotenv import load_dotenv
+import os
+load_dotenv()
+PORT = os.getenv("PORT")
+if PORT is None:
+    PORT = 3000
+
+if PORT == 3000:
+    write_env()
 
 from quart import Quart, render_template, redirect, request
-import os
-from dotenv import load_dotenv
 from database_config import db
 from BLAST import query
 
