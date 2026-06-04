@@ -45,7 +45,7 @@ def create_sunburst_chart(nodes: list[tuple],
         ax.set_theta_zero_location('N')
         ax.set_axis_off()
 
-        plt.savefig("graphs/" + title + ".svg")
+        plt.savefig("static/" + title + ".svg")
         plt.show()
 
 

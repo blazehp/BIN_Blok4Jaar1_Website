@@ -1,9 +1,13 @@
 # https://flask.palletsprojects.com/en/stable/tutorial/layout/
 import asyncio
-import time
-from _webcreds import write_creds as write_env
-from dotenv import load_dotenv
 import os
+import time
+
+from dotenv import load_dotenv
+
+from _webcreds import write_creds as write_env
+from analysis import species_graph
+
 load_dotenv()
 PORT = os.getenv("PORT")
 if PORT is None:
@@ -12,7 +16,7 @@ if PORT is None:
 if PORT == 3000:
     write_env()
 
-from quart import Quart, render_template, redirect, request
+from quart import Quart, render_template, request
 from database_config import db
 from BLAST import query
 
@@ -39,24 +43,31 @@ async def blast():
 async def docs():
     return await render_template('tech_doc.html')
 
+
+@app.route('/analysis')
+async def analysis():
+    species_graph()
+    return await render_template('analysis.html')
+
+
 # Admin Routes
 @app.route('/admin', methods=["GET", "POST"])
 async def admin():
     tables = ["input", "raw_blast", "filtered_blast", "protein", "organism"]
     current_table = request.args.get("table", "input")
-    
+
     if current_table not in tables:
         current_table = "input"
-    
+
     cursor = db.cursor()
-    
+
     # Fetch data
     cursor.execute(f"SELECT * FROM {current_table}")
     rows_raw = cursor.fetchall()
-    
+
     # Extract column names
     columns = [desc[0] for desc in cursor.description]
-    
+
     # Convert rows --> dicts (IMPORTANT)
     rows = []
     for row in rows_raw:
@@ -64,15 +75,16 @@ async def admin():
         for index, col in enumerate(columns):
             row_dict[col] = row[index]
         rows.append(row_dict)
-    
+
     # db.close()
     return await render_template("admin.html", tables=tables,
-                           current_table=current_table, columns=columns,
-                           rows=rows)
+                                 current_table=current_table, columns=columns,
+                                 rows=rows)
+
 
 def blast_querying():
     cursor = db.cursor()
-    
+
     # Fetch data
     cursor.execute(f"SELECT id ,sequence FROM input WHERE run_id is NULL")
     non_blasted_sequences = cursor.fetchall()
@@ -82,15 +94,17 @@ def blast_querying():
         # Extra time than suggested time to reduce chance of blocking
         print("Pausing...")
         time.sleep(20.0)
-    
+
     cursor.close()
     return
+
 
 @app.route('/run_blast', methods=["GET"])
 async def run_blast():
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, blast_querying)
     return "Blasting..."
+
 
 @app.route("/_creds", methods=["GET"])
 async def _creds():
@@ -105,6 +119,7 @@ async def _creds():
     }
     return db_creds
 
+
 def delete_table(cur, table_name: str = "all"):
     """
     DANGER: Only run when need to do a **full wipe**!
@@ -116,7 +131,7 @@ def delete_table(cur, table_name: str = "all"):
         cur.execute("DROP TABLE IF EXISTS filtered_blast")
         cur.execute("DROP TABLE IF EXISTS raw_blast")
         cur.execute("DROP TABLE IF EXISTS input")
-        
+
     else:
         cur.execute(f"DROP TABLE IF EXISTS {table_name}")
 
@@ -124,88 +139,229 @@ def delete_table(cur, table_name: str = "all"):
 if __name__ == '__main__':
     cur = db.cursor()
     # Create Database Tables on server launch
-    
+
     # -- Input table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS input (
-                    id int PRIMARY KEY AUTO_INCREMENT,
-                    sequence longtext NOT NULL,
-                    run_id varchar(255),
+                CREATE TABLE IF NOT EXISTS input
+                (
+                    id
+                    int
+                    PRIMARY
+                    KEY
+                    AUTO_INCREMENT,
+                    sequence
+                    longtext
+                    NOT
+                    NULL,
+                    run_id
+                    varchar
+                (
+                    255
+                ),
                     -- Constraints
-                    UNIQUE (run_id)
+                    UNIQUE
+                (
+                    run_id
+                )
                     );
                 """)
 
     # -- Raw Blast table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS raw_blast (
-                    id int PRIMARY KEY AUTO_INCREMENT,
-                    run_id varchar(255) NOT NULL,
+                CREATE TABLE IF NOT EXISTS raw_blast
+                (
+                    id
+                    int
+                    PRIMARY
+                    KEY
+                    AUTO_INCREMENT,
+                    run_id
+                    varchar
+                (
+                    255
+                ) NOT NULL,
 
-                    e_value varchar(255) NOT NULL,
-                    accession_code varchar(255) NOT NULL,
-                    protein_name varchar(255) NOT NULL,
-                    organism_name varchar(255) NOT NULL,
-                    score float(24) NOT NULL,
-                    description varchar(2500) NOT NULL,
-                    bits float(24) NOT NULL,
-                    identity_perc float(24) NOT NULL,
+                    e_value varchar
+                (
+                    255
+                ) NOT NULL,
+                    accession_code varchar
+                (
+                    255
+                ) NOT NULL,
+                    protein_name varchar
+                (
+                    255
+                ) NOT NULL,
+                    organism_name varchar
+                (
+                    255
+                ) NOT NULL,
+                    score float
+                (
+                    24
+                ) NOT NULL,
+                    description varchar
+                (
+                    2500
+                ) NOT NULL,
+                    bits float
+                (
+                    24
+                ) NOT NULL,
+                    identity_perc float
+                (
+                    24
+                ) NOT NULL,
                     -- Constraints
-                    CONSTRAINT query_id FOREIGN KEY(run_id)
-                    REFERENCES input(run_id)
-                );
+                    CONSTRAINT query_id FOREIGN KEY
+                (
+                    run_id
+                )
+                    REFERENCES input
+                (
+                    run_id
+                )
+                    );
                 """)
 
     # -- Filtered Blast table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS filtered_blast (
-                    id int PRIMARY KEY AUTO_INCREMENT,
-                    run_id varchar(255) NOT NULL,
+                CREATE TABLE IF NOT EXISTS filtered_blast
+                (
+                    id
+                    int
+                    PRIMARY
+                    KEY
+                    AUTO_INCREMENT,
+                    run_id
+                    varchar
+                (
+                    255
+                ) NOT NULL,
 
-                    e_value varchar(255) NOT NULL,
-                    accession_code varchar(255) NOT NULL,
-                    protein_name varchar(255) NOT NULL,
-                    organism_name varchar(255) NOT NULL,
-                    score float(24) NOT NULL,
-                    description varchar(2500) NOT NULL,
-                    bits float(24) NOT NULL,
-                    identity_perc float(24) NOT NULL,
+                    e_value varchar
+                (
+                    255
+                ) NOT NULL,
+                    accession_code varchar
+                (
+                    255
+                ) NOT NULL,
+                    protein_name varchar
+                (
+                    255
+                ) NOT NULL,
+                    organism_name varchar
+                (
+                    255
+                ) NOT NULL,
+                    score float
+                (
+                    24
+                ) NOT NULL,
+                    description varchar
+                (
+                    2500
+                ) NOT NULL,
+                    bits float
+                (
+                    24
+                ) NOT NULL,
+                    identity_perc float
+                (
+                    24
+                ) NOT NULL,
                     -- Constraints
-                    CONSTRAINT q_id FOREIGN KEY(run_id)
-                    REFERENCES input(run_id)
-                );
+                    CONSTRAINT q_id FOREIGN KEY
+                (
+                    run_id
+                )
+                    REFERENCES input
+                (
+                    run_id
+                )
+                    );
                 """)
 
     # -- Protein table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS protein (
-                    id int PRIMARY KEY AUTO_INCREMENT,
-                    protein_name varchar(255) NOT NULL,
-                    protein_function varchar(2500),
-                    hit_id int(255) NOT NULL,
+                CREATE TABLE IF NOT EXISTS protein
+                (
+                    id
+                    int
+                    PRIMARY
+                    KEY
+                    AUTO_INCREMENT,
+                    protein_name
+                    varchar
+                (
+                    255
+                ) NOT NULL,
+                    protein_function varchar
+                (
+                    2500
+                ),
+                    hit_id int
+                (
+                    255
+                ) NOT NULL,
                     -- Constraints
-                    CONSTRAINT prot_blast_hit FOREIGN KEY(hit_id)
-                    REFERENCES filtered_blast(id)
+                    CONSTRAINT prot_blast_hit FOREIGN KEY
+                (
+                    hit_id
+                )
+                    REFERENCES filtered_blast
+                (
+                    id
+                )
                     );
                 """)
 
     # -- Organism table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS organism (
-                    id int PRIMARY KEY AUTO_INCREMENT,
-                    organism_name varchar(255) NOT NULL,
-                    family varchar(255),
-                    sex varchar(255),
-                    species varchar(255) NOT NULL,
-                    hit_id int(255) NOT NULL,
+                CREATE TABLE IF NOT EXISTS organism
+                (
+                    id
+                    int
+                    PRIMARY
+                    KEY
+                    AUTO_INCREMENT,
+                    organism_name
+                    varchar
+                (
+                    255
+                ) NOT NULL,
+                    family varchar
+                (
+                    255
+                ),
+                    sex varchar
+                (
+                    255
+                ),
+                    species varchar
+                (
+                    255
+                ) NOT NULL,
+                    hit_id int
+                (
+                    255
+                ) NOT NULL,
                     -- Constraints
-                    CONSTRAINT org_blast_hit FOREIGN KEY (hit_id)
-                    REFERENCES filtered_blast(id)
+                    CONSTRAINT org_blast_hit FOREIGN KEY
+                (
+                    hit_id
+                )
+                    REFERENCES filtered_blast
+                (
+                    id
+                )
                     );
                 """)
 
     # Close connection after table creation
     cur.close()
-    
+
     # Start Server
     app.run(debug=PORT == "3000", port=PORT)
