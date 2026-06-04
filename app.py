@@ -2,10 +2,7 @@
 import asyncio
 import time
 from _webcreds import write_creds as write_env
-# Only create .env file during development
-if __debug__:
-    print("DEV MODE DETECTED: Creating `.env` file...")
-    write_env()
+write_env()
 
 from quart import Quart, render_template, redirect, request
 import os
