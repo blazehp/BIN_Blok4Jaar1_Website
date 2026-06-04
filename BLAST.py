@@ -11,7 +11,7 @@ from parsing import parse_excel
 Blast.email = "mmj.guillorit@sudent.han.nl"
 
 
-async def query(sequence : str, seq_id):
+def query(sequence : str, seq_id):
     """
     :param sequence:
     :return: Query_id , accession_code, description, organism,

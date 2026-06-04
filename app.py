@@ -1,12 +1,17 @@
 # https://flask.palletsprojects.com/en/stable/tutorial/layout/
-
+import asyncio
+import time
 from _webcreds import write_creds as write_env
+# Only create .env file during development
+if __debug__:
+    print("DEV MODE DETECTED: Creating `.env` file...")
+    write_env()
+
 from quart import Quart, render_template, redirect, request
 import os
 from dotenv import load_dotenv
 from database_config import db
 from BLAST import query
-from asyncio import sleep
 
 # Load environment variables into the server
 # This is the .env when in development mode
@@ -61,7 +66,8 @@ async def admin():
     return await render_template("admin.html", tables=tables,
                            current_table=current_table, columns=columns,
                            rows=rows)
-async def blast_querying():
+
+def blast_querying():
     cursor = db.cursor()
     
     # Fetch data
@@ -69,17 +75,18 @@ async def blast_querying():
     non_blasted_sequences = cursor.fetchall()
     for (ids, seq) in non_blasted_sequences:
         print(f'Running blast for {ids}')
-        await query(seq, ids)
+        query(seq, ids)
         # Extra time than suggested time to reduce chance of blocking
         print("Pausing...")
-        await sleep(20.0)
+        time.sleep(20.0)
     
     cursor.close()
     return
 
 @app.route('/run_blast', methods=["GET"])
 async def run_blast():
-    app.add_background_task(blast_querying)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, blast_querying)
     return "Blasting..."
 
 @app.route("/_creds", methods=["GET"])
