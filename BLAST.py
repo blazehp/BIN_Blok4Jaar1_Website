@@ -2,6 +2,8 @@ import pandas as pd
 import asyncio
 from Bio import Blast, UniProt
 from Bio.Blast import NCBIXML, NCBIWWW
+from openpyxl.descriptors import sequence
+
 from database_config import db
 from database_manager import InputTable, RawBlastTable
 import re
@@ -77,7 +79,7 @@ def query(sequence : str, seq_id):
     return
 
 
-async def fill_db(path:str):
+async def fill_db(path):
     """
     loop through all sequences and push them to database
 
