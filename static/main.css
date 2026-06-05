@@ -1,13 +1,214 @@
-/* Global Styling */
+:root {
+    /* Color palette - warm "paper" color */
+    --paper: #faf8f3;
+    --bg-color: #ffffff;
+    --text-color: #1a1a17;
+    --light-text-color: #3d3d36;
+    --muted: #6b6b63;
+    --line: #e7e3d8;
+    --line-strong: #d8d3c4;
+
+    --accent: #3a5a40;
+    --accent-bright: #588157;
+    --accent-soft: #a3b18a;
+    --accent-tint: #eef1e9;
+
+    --danger: #b3261e;
+
+    /* Layout */
+    --maxw: 1120px;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 2px rgba(26, 26, 23, 0.04),
+              0 8px 24px rgba(26, 26, 23, 0.06);
+    --shadow-lg: 0 12px 40px rgba(26, 26, 23, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
 
 body {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+    background-color: var(--paper);
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1.65;
 }
 
+/* --- Headings --- */
+
+h1, h2, h3, h4 {
+    color: var(--text-color);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.4em;
+    font-weight: 600;
+}
+
+h1 { font-size: clamp(2.4rem, 5vw, 3.8rem); }
+h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); }
+h3 { font-size: 1.35rem; }
+
+p { margin: 0 0 1rem; }
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.18s ease;
+}
+
+a:hover { color: var(--accent-bright); }
+
+/* --- Nav --- */
+
 nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
     display: flex;
+    padding: 16px clamp(20px, 5vw, 56px);
+    background: rgba(250, 248, 243, 0.82);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+    user-select: none;
+}
+
+.nav-logo {
+    display: flex;
+    width: 100%;
     align-items: center;
-    gap: 10px;
+    justify-content: start;
+    gap: 28px;
+
+    img {
+        width: 50px;
+        height: auto;
+        border-radius: 100%;
+    }
+
+    span {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+}
+
+.nav-links {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: end;
+    gap: 28px;
+}
+
+nav a {
+    position: relative;
+    color: var(--light-text-color);
+    font-size: 1.25rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 4px 2px;
+}
+
+nav a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    width: 0;
+    height: 2px;
+    background: var(--accent-bright);
+    transition: width 0.22s ease;
+}
+
+nav a:hover { color: var(--text-color); }
+nav a:hover::after { width: 100%; }
+
+/* --- Shared Stylings --- */
+
+main, header {
+    margin-inline: 30px;
+}
+
+.section-title {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+}
+
+/* --- Buttons --- */
+
+.btn,
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, background 0.18s ease,
+                box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.btn {
+    background: var(--accent);
+    color: #fff;
+}
+
+.btn:hover {
+    background: var(--accent-bright);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-color);
+    border-color: var(--line-strong);
+}
+
+.btn-ghost:hover {
+    border-color: var(--accent-soft);
+    background: var(--accent-tint);
+    color: var(--accent);
+}
+
+/* --- Footer --- */
+
+.site-footer {
+    border-top: 1px solid var(--line);
+    margin-top: 64px;
+    background: var(--bg-color);
+}
+
+.site-footer-inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 40px clamp(20px, 5vw, 56px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.site-footer-brand {
+    font-size: 1.05rem;
+    color: var(--text-color);
+}
+
+.site-footer-links {
+    display: flex;
+    gap: 22px;
 }

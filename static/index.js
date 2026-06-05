@@ -1,1 +1,4 @@
-console.log("Hello from Javascript!");
+function refreshPage() {
+  console.log("Page Reloaded");
+  window.location.reload();
+};

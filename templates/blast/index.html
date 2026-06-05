@@ -1,0 +1,27 @@
+{% extends 'layout.html' %}
+
+{% block meta %}
+    <link rel="stylesheet" href="/static/styles/blast.css">
+{% endblock %}
+
+{% block title %}BLAST PICKER{% endblock %}
+
+{% block header %}
+    <h3>BLAST PICKER</h3>
+{% endblock %}
+
+{% block content %}
+    <main>
+        <section class="blast-page-picker">
+            <!-- 200 Sequence BLAST Analysis -->
+         <a href="/200seq_blast">
+            <span>200 Sequences</span>
+         </a>
+
+         <!-- Self BLAST -->
+          <a href="/self-blast">
+            <span>Self BLAST</span>
+          </a>
+        </section>
+    </main>
+{% endblock %}

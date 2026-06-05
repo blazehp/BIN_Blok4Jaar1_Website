@@ -51,12 +51,20 @@ class BlastFilterForm(QuartForm):
 async def seq200blast():
     form = await BlastFilterForm.create_form()
     cur = db.cursor(dictionary=True)
+
+    # RawBlast for now until data is available in FilteredBlast
     flblast_db = RawBlastTable(cur)
-    result = flblast_db.select()
+    result = flblast_db.select()[:50]
+    if await form.validate_on_submit():
+        sw = form.search_word.data
+        if sw is not None:
+            result = flblast_db.custom_query(f"""
+            SELECT * FROM raw_blast WHERE protein_name LIKE '%{sw}%' OR organism_name LIKE '%{sw}%' OR description LIKE '%{sw}%';
+            """, returns=True)
     columns = list(result[0].keys())
     return await render_template('blast/200_blast.html', data=result, columns=columns, form=form)
 
-@app.route('/self_blast')
+@app.route('/self-blast')
 async def self_blast():
     return await render_template('/blast/self_blast.html')
 

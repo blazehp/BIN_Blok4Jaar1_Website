@@ -8,8 +8,7 @@
     <!--  Important for proper sizing and responsive sizing of website  -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
-    <meta name="keywords"
-          content="Bio-Informatica, Biologie, Informatica, Python">
+    <meta name="keywords" content="Bio-Informatica, Biologie, Informatica, Python">
     <!--  Global Stylesheet  -->
     <link rel="stylesheet" href="/static/main.css">
     <!--  For JS Functionality ( global ) -->
@@ -17,22 +16,39 @@
     {% block meta %}{% endblock %}
 
     <title>{% block title %}{% endblock %}</title>
-    <meta name="description"
-          content="Bio-Informatics Website Made with Python">
+    <meta name="description" content="Bio-Informatics Website Made with Python">
 </head>
 
 <body>
-<nav>
-    <a href="/">Home</a>
-    <a href="/blast">Blast</a>
-    <a href="/docs">Documentation</a>
-</nav>
+    <nav>
+        <div class="nav-logo">
+            <img src="/static/shroomdb_logo.png" alt="ShroomDB-logo" width="500" height="500" draggable="false" />
+            <span>ShroomDB</span>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/blast">Blast</a>
+            <a href="/docs">Documentation</a>
+        </div>
+    </nav>
 
-<header>
-    {% block header %}{% endblock %}
-</header>
+    <header>
+        {% block header %}{% endblock %}
+    </header>
 
-{% block content %}{% endblock %}
+    {% block content %}{% endblock %}
+
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <span class="site-footer-brand">Bio-Informatica • Blok 4</span>
+            <nav class="site-footer-links">
+                <a href="/">Home</a>
+                <a href="/blast">Blast</a>
+                <a href="/docs">Documentation</a>
+            </nav>
+            <span>&copy; 2026 • Jaar 1 Bio-Informatica</span>
+        </div>
+    </footer>
 </body>
 
 </html>

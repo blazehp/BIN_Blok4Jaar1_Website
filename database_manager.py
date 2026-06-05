@@ -24,15 +24,10 @@ class _DatabaseManager:
         """
         try:
             if columns == "all":
-                self.cursor.execute(f"SELECT * FROM {self.table}")
+                self.cursor.execute(f"SELECT * FROM {self.table};")
             else:
-                self.cursor.execute(f"SELECT {columns} FROM {self.table}")
-            
-            res = []
-            while self.cursor.nextset():
-                res.append(self.cursor.fetchall())
-            res = np_array(res)
-            return res.flatten()
+                self.cursor.execute(f"SELECT {columns} FROM {self.table};")
+            return self.cursor.fetchall()
         except:
             print("Error selecting value(s) from table")
     
@@ -103,11 +98,7 @@ class _DatabaseManager:
         """
         if returns:
             self.cursor.execute(query)
-            res = []
-            while self.cursor.nextset():
-                res.append(self.cursor.fetchall())
-            res = np_array(res)
-            return res.flatten()
+            return self.cursor.fetchall()
         
         self.cursor.execute(query)
         return None
