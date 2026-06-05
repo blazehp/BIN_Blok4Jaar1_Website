@@ -94,7 +94,7 @@ class _DatabaseManager:
         
         Parameters:
             query (str): The raw **MYSQL** query
-            returns (bool): Rather or not the query returns data
+            returns (bool): weither or not the query returns data
         """
         if returns:
             self.cursor.execute(query)
