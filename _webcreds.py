@@ -17,6 +17,7 @@ def write_creds():
         DB_POOL_NAME="{creds["pool_name"]}"
         DB_POOL_SIZE="{creds["pool_size"]}"
         PORT="3000"
+        CSRF_SECRET_KEY="{creds["csrf_secret_key"]}"
         """
         file.write(content)
     return

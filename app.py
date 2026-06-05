@@ -19,12 +19,18 @@ if PORT == 3000:
 from quart import Quart, render_template, request
 from database_config import db
 from BLAST import query
+from database_manager import FilteredBlast, RawBlastTable
+from quart_wtf import QuartForm, CSRFProtect
+from wtforms import StringField
+from wtforms.validators import Optional
 
 # Load environment variables into the server
 # This is the .env when in development mode
 load_dotenv()
 
 app = Quart(__name__)
+app.secret_key = os.getenv("CSRF_SECRET_KEY")
+csrf = CSRFProtect(app)
 PORT = os.getenv("PORT")
 
 
@@ -35,9 +41,24 @@ async def index():
 
 @app.route('/blast')
 async def blast():
-    print(f"Is connected? {db.is_connected()}")
-    return await render_template('blast.html')
+    return await render_template('blast/index.html')
 
+
+class BlastFilterForm(QuartForm):
+    search_word = StringField("Search", validators=[Optional()])
+
+@app.route('/200seq_blast', methods=["GET", "POST"])
+async def seq200blast():
+    form = await BlastFilterForm.create_form()
+    cur = db.cursor(dictionary=True)
+    flblast_db = RawBlastTable(cur)
+    result = flblast_db.select()
+    columns = list(result[0].keys())
+    return await render_template('blast/200_blast.html', data=result, columns=columns, form=form)
+
+@app.route('/self_blast')
+async def self_blast():
+    return await render_template('/blast/self_blast.html')
 
 @app.route('/docs')
 async def docs():
@@ -116,6 +137,7 @@ async def _creds():
         "database": os.getenv("DB_DATABASE"),
         "pool_name": os.getenv("DB_POOL_NAME"),
         "pool_size": int(os.getenv("DB_POOL_SIZE")),
+        "csrf_secret_key": os.getenv("CSRF_SECRET_KEY"),
     }
     return db_creds
 
