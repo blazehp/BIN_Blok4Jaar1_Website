@@ -243,6 +243,10 @@ if __name__ == '__main__':
                 (
                     24
                 ) NOT NULL,
+                    converage float
+                (
+                    24
+                ),
                     -- Constraints
                     CONSTRAINT query_id FOREIGN KEY
                 (
@@ -302,6 +306,10 @@ if __name__ == '__main__':
                 (
                     24
                 ) NOT NULL,
+                    converage float
+                (
+                    24
+                ),
                     -- Constraints
                     CONSTRAINT q_id FOREIGN KEY
                 (

@@ -15,7 +15,7 @@ Blast.email = "mmj.guillorit@sudent.han.nl"
 
 def query(sequence : str, seq_id):
     """
-    :param sequence:
+    :param sequence , seq_id:
     :return: Query_id , accession_code, description, organism,
     score , e-value, identities,
 
@@ -58,25 +58,22 @@ def query(sequence : str, seq_id):
 
         #loop through HSP from alignment (n)
         for hsp in alignment.hsps:
-            hit_score = hsp.score
-            escore = hsp.expect
-            bits = hsp.bits
-            identities = hsp.identities
             insert_raw.column['run_id'] = query_id
             insert_raw.column['accession_code'] = accession_code
             insert_raw.column['description'] = description
             insert_raw.column['organism_name'] = organism
-            insert_raw.column['e_value'] = escore
-            insert_raw.column['bits'] = bits
-            insert_raw.column['identity_perc'] = identities
-            insert_raw.column['score'] = hit_score
+            insert_raw.column['e_value'] = hsp.expect
+            insert_raw.column['bits'] = hsp.bits
+            insert_raw.column['identity_perc'] = hsp.identities
+            insert_raw.column['score'] = hsp.score
+            insert_raw.column["coverage"] = (hsp.align_length / blast_record.query_length * 100) \
+                    if hsp.align_length > 0 else 0
             insert_raw.column['protein_name'] = description.replace(
                 organism, "").strip()
             insert_raw.insert()
             db.commit()
             cur.close()
-
-    return
+    return query_id
 
 
 async def fill_db(path):
@@ -106,7 +103,3 @@ async def push_to_db(sequence: str):
     db.commit()
     cur.close()
     return
-
-if __name__ == "__main__":
-    print("Filling Input table with Excel Sequences...")
-    asyncio.run(fill_db("Course4_dataset_v04.xlsx"))

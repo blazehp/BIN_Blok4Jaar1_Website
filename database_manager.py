@@ -33,19 +33,19 @@ class _DatabaseManager:
     
     def insert(self):
         """Insert values for all columns in table."""
-        try:
-            columns = ','.join([key for key in self.data.keys()])
+        # try:
+        columns = ','.join([key for key in self.data.keys()])
             # Using placeholders + tuple data to allow None values
-            value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
-            values = tuple(self.data.values())
-            if None in values:
-                raise ValueError
-            query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
-            self.cursor.execute(query, params=values)
-        except ValueError:
-            print("Check inputted values. Cannot insert NONE values")
-        except:
-            print("Error inserting into Database")
+        value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
+        values = tuple(self.data.values())
+        if None in values:
+            raise ValueError
+        query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
+        self.cursor.execute(query, params=values)
+        # except ValueError:
+        #      print("Check inputted values. Cannot insert NONE values")
+        # except:
+        #      print("Error inserting into Database")
     
     def update(self, position, pvalue):
         """
@@ -114,7 +114,7 @@ class InputTable(_DatabaseManager):
 class RawBlastTable(_DatabaseManager):
     def __init__(self, cur: MySQLCursorAbstract):
         self.column: dict[Literal["run_id","e_value","identity_perc", "accession_code",
-        "protein_name","description", "organism_name","score","bits"],
+        "protein_name","description", "organism_name","score","bits","coverage"],
         Any] = {
             "run_id": None,
             "e_value": None,
@@ -124,14 +124,15 @@ class RawBlastTable(_DatabaseManager):
             "organism_name": None,
             "score": None,
             "description": None,
-            "bits": None
+            "bits": None,
+            "coverage": None,
         }
         super().__init__(cur, "raw_blast", self.column)
         
 class FilteredBlast(_DatabaseManager):
     def __init__(self, cur: MySQLCursorAbstract):
         self.column: dict[Literal["run_id","e_value","identity_perc", "accession_code",
-        "protein_name","description", "organism_name","score","bits"],
+        "protein_name","description", "organism_name","score","bits","coverage"],
         Any] = {
             "run_id": None,
             "e_value": None,
@@ -141,7 +142,8 @@ class FilteredBlast(_DatabaseManager):
             "organism_name": None,
             "score": None,
             "description": None,
-            "bits": None
+            "bits": None,
+            "coverage": None,
         }
         super().__init__(cur, "filtered_blast", self.column)
         
