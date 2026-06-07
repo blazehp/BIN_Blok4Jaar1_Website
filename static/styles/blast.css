@@ -9,7 +9,7 @@
     a {
         width: 200px;
         height: 200px;
-        border: 2px solid var(--ink-soft);
+        border: 2px solid var(--light-text-color);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -35,7 +35,7 @@
 .blast-hero-desc {
     font-size: 1.2rem;
     line-height: 1.6;
-    color: var(--ink-soft);
+    color: var(--light-text-color);
 }
 
 /* ---- Toolbar ----------------------------------------------------------- */
@@ -68,10 +68,9 @@
 .search input {
     width: 100%;
     padding: 12px 16px 12px 42px;
-    font-family: var(--font-body);
     font-size: 0.96rem;
-    color: var(--ink);
-    background: var(--surface);
+    color: var(--text-color);
+    background: var(--bg-color);
     border: 1px solid var(--line-strong);
     border-radius: 999px;
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -102,7 +101,7 @@
 /* ---- Table ------------------------------------------------------------- */
 
 .blast-table-wrap {
-    background: var(--surface);
+    background: var(--bg-color);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -124,7 +123,6 @@
     top: 0;
     background: var(--accent-tint);
     color: var(--accent);
-    font-family: var(--font-body);
     font-size: 0.74rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -138,7 +136,7 @@
 #blastTable tbody td {
     padding: 14px 18px;
     border-bottom: 1px solid var(--line);
-    color: var(--ink-soft);
+    color: var(--light-text-color);
     vertical-align: top;
 }
 
@@ -155,13 +153,13 @@
 }
 
 .cell-strong {
-    color: var(--ink);
+    color: var(--text-color);
     font-weight: 600;
 }
 
 .cell-strong em {
     font-weight: 500;
-    color: var(--ink-soft);
+    color: var(--light-text-color);
 }
 
 .cell-num {
@@ -224,17 +222,16 @@
 }
 
 .legend-item {
-    background: var(--surface);
+    background: var(--bg-color);
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     padding: 20px;
 }
 
 .legend-item h4 {
-    font-family: var(--font-body);
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--text-color);
     margin: 0 0 6px;
 }
 

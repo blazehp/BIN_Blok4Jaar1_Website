@@ -131,6 +131,10 @@ main, header {
     margin-inline: 30px;
 }
 
+main {
+    min-height: 100vh;
+}
+
 .section-title {
     display: inline-block;
     font-size: 0.78rem;

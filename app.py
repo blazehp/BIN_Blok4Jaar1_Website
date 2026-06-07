@@ -45,24 +45,40 @@ async def blast():
 
 
 class BlastFilterForm(QuartForm):
-    search_word = StringField("Search", validators=[Optional()])
+    search_word = StringField("Search")
 
-@app.route('/200seq_blast', methods=["GET", "POST"])
-async def seq200blast():
+@app.route('/200seq_blast', defaults={'row_id': None})
+@app.route('/200seq_blast/<int:row_id>', methods=["GET", "POST"])
+async def seq200blast(row_id):
     form = await BlastFilterForm.create_form()
     cur = db.cursor(dictionary=True)
 
     # RawBlast for now until data is available in FilteredBlast
     flblast_db = RawBlastTable(cur)
-    result = flblast_db.select()[:50]
-    if await form.validate_on_submit():
-        sw = form.search_word.data
-        if sw is not None:
-            result = flblast_db.custom_query(f"""
-            SELECT * FROM raw_blast WHERE protein_name LIKE '%{sw}%' OR organism_name LIKE '%{sw}%' OR description LIKE '%{sw}%';
-            """, returns=True)
-    columns = list(result[0].keys())
-    return await render_template('blast/200_blast.html', data=result, columns=columns, form=form)
+    result = flblast_db.select()
+    sw = request.args.get("search_word")
+    if sw is not None:
+        result = flblast_db.custom_query(f"""
+        SELECT * FROM raw_blast WHERE protein_name LIKE '%{sw}%' OR organism_name LIKE '%{sw}%' OR description LIKE '%{sw}%';
+        """, returns=True)
+    
+    filters = {
+        "search_word": sw
+    }
+    
+    columns = None
+    if len(result) > 0:
+        columns = list(result[0].keys())
+    
+    if row_id:
+        print(f"DATA: {result}")
+        row = list(filter(lambda data: data["id"] == row_id, result))[0]
+        return await render_template('blast/200_blast_row.html',
+                                     query_id=row["run_id"], data=row)
+    
+    return await render_template('blast/200_blast.html',
+                                 data=result if sw is not None else result[:50],
+                                 columns=columns, form=form, filters=filters)
 
 @app.route('/self-blast')
 async def self_blast():

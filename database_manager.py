@@ -1,8 +1,8 @@
 """`database_manager.py`: Contains utility class(es) and function(s) to
 safely and properly manage the database from one place."""
 from typing import Literal, Any
+import warnings
 
-from numpy import array as np_array
 from mysql.connector.abstracts import MySQLCursorAbstract
 
 class _DatabaseManager:
@@ -36,6 +36,7 @@ class _DatabaseManager:
         # try:
         columns = ','.join([key for key in self.data.keys()])
             # Using placeholders + tuple data to allow None values
+<<<<<<< Updated upstream
         value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
         values = tuple(self.data.values())
         if None in values:
@@ -46,6 +47,18 @@ class _DatabaseManager:
         #      print("Check inputted values. Cannot insert NONE values")
         # except:
         #      print("Error inserting into Database")
+=======
+            value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
+            values = tuple(self.data.values())
+            if None in values:
+                warnings.warn("Inserting NONE values may cause errors")
+            query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
+            self.cursor.execute(query, params=values)
+        except ValueError:
+            print("Check inputted values.")
+        except:
+            print("Error inserting into Database; ")
+>>>>>>> Stashed changes
     
     def update(self, position, pvalue):
         """
