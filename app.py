@@ -360,15 +360,6 @@ if __name__ == '__main__':
                 (
                     255
                 ) NOT NULL,
-                    -- Constraints
-                    CONSTRAINT prot_blast_hit FOREIGN KEY
-                (
-                    hit_id
-                )
-                    REFERENCES filtered_blast
-                (
-                    id
-                )
                     );
                 """)
 
@@ -402,15 +393,6 @@ if __name__ == '__main__':
                 (
                     255
                 ) NOT NULL,
-                    -- Constraints
-                    CONSTRAINT org_blast_hit FOREIGN KEY
-                (
-                    hit_id
-                )
-                    REFERENCES filtered_blast
-                (
-                    id
-                )
                     );
                 """)
 
