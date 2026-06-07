@@ -103,3 +103,7 @@ async def push_to_db(sequence: str):
     db.commit()
     cur.close()
     return
+
+if __name__ == "__main__":
+    print("Filling Input table with Excel Sequences...")
+    asyncio.run(fill_db("Course4_dataset_v04.xlsx"))

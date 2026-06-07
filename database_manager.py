@@ -33,21 +33,9 @@ class _DatabaseManager:
     
     def insert(self):
         """Insert values for all columns in table."""
-        # try:
-        columns = ','.join([key for key in self.data.keys()])
+        try:
+            columns = ','.join([key for key in self.data.keys()])
             # Using placeholders + tuple data to allow None values
-<<<<<<< Updated upstream
-        value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
-        values = tuple(self.data.values())
-        if None in values:
-            raise ValueError
-        query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
-        self.cursor.execute(query, params=values)
-        # except ValueError:
-        #      print("Check inputted values. Cannot insert NONE values")
-        # except:
-        #      print("Error inserting into Database")
-=======
             value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
             values = tuple(self.data.values())
             if None in values:
@@ -58,7 +46,6 @@ class _DatabaseManager:
             print("Check inputted values.")
         except:
             print("Error inserting into Database; ")
->>>>>>> Stashed changes
     
     def update(self, position, pvalue):
         """
