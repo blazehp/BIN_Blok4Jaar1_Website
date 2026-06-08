@@ -3,12 +3,23 @@ from matplotlib import pyplot as plt
 
 
 def create_piechart(values: dict, title: str):
-    keys = np.array(list(values.keys()))
+    if not values:
+        raise ValueError("values are empty")
+    if not isinstance(values, dict):
+        raise ValueError("values are not a dict")
+    if not isinstance(title, str):
+        raise ValueError("title is not a string")
+    try:
+        keys = np.array(list(values.keys()))
 
-    plt.pie(values.values(), labels=keys)
-    plt.title(title)
-    plt.savefig("static/" + title + ".svg")
-    plt.show()
+        plt.pie(values.values(), labels=keys)
+        plt.title(title)
+        plt.savefig("static/" + title + ".svg")
+
+    except TypeError as e:
+        print("data is formatted wrong make sure all values are numerical")
+    finally:
+        plt.show()
 
 
 def create_sunburst_chart(nodes: list[tuple],
