@@ -73,6 +73,7 @@ def filter_raw() -> tuple:
 
     return contents
 
+
 def seek_protein():
 
     cur = db.cursor(dictionary=True)
@@ -85,7 +86,6 @@ def seek_protein():
 
         cur = db.cursor(dictionary=True)
         add = ProteinTable(cur)
-        print(row["protein_name"])
 
         if row["protein_name"] in already_in:
             result = add.custom_query(
@@ -105,7 +105,6 @@ def seek_protein():
             db.commit()
 
         else:
-            print("entered new protein")
             already_in.add(row["protein_name"])
             add.column["protein_name"] = row["protein_name"]
             add.column["hit_id"] = str(row["id"])
@@ -180,109 +179,156 @@ def get_protein_function(protein_name: str) -> str | None:
 
 
 def seek_tax():
+    # Pre-populate already_in from existing DB records to survive restarts
     cur = db.cursor(dictionary=True)
-    cur_select = RawBlastTable(cur)
-    contents = cur_select.custom_query(
-        "select distinct id , organism_name, accession_code from filtered_blast where accession_code != '-' ;",
-        True)
+    existing = OrganismTable(cur).custom_query(
+        "SELECT organism_name FROM organism;",
+        returns=True
+    )
+    already_in = {row["organism_name"] for row in existing}
+
+    # Fetch distinct organisms to process
+    blast_cur = RawBlastTable(cur)
+    contents = blast_cur.custom_query(
+        "SELECT DISTINCT id, organism_name, accession_code "
+        "FROM filtered_blast WHERE accession_code != '-';",
+        returns=True
+    )
     cur.close()
-    already_in = set()
 
     for row in contents:
+        organism = row["organism_name"]
+        row_id = str(row["id"])
 
         cur = db.cursor(dictionary=True)
         add = OrganismTable(cur)
 
-        if row["organism_name"] in already_in:
-            result = add.custom_query(
-                "SELECT hit_id FROM organism WHERE organism_name = %s;",
-                params=(row['organism_name'],),
-                returns=True
-            )
-            hit_ids = result[0]["hit_id"].split(",")
-            if str(row["id"]) not in hit_ids:
-                hit_ids.append(str(row["id"]))
-            updated = ",".join(hit_ids)
-            add.custom_query(
-                "UPDATE organism SET hit_id = %s WHERE organism_name = %s;",
-                params=(updated, row['organism_name']),
-                returns=False
-            )
-            db.commit()
+        try:
+            if organism in already_in:
+                result = add.custom_query(
+                    "SELECT hit_id FROM organism WHERE organism_name = %s;",
+                    params=(organism,),
+                    returns=True
+                )
+                if not result:
+                    print(f"Warning: '{organism}' in already_in but not found in DB, skipping.")
+                    continue
 
-        else:
-            print("entered new organism")
-            already_in.add(row["organism_name"])
-            tax = get_taxonomy(row["accession_code"])
-            add.column["organism_name"] = row["organism_name"]
-            add.column["family"] = tax["family"]
-            add.column["genus"] = tax["genus"]
-            add.column["species"] = tax["species"]
-            add.column["hit_id"] = str(row["id"])
-            add.insert()
-            db.commit()
-            sleep(0.33)
+                hit_ids = result[0]["hit_id"].split(",")
 
-        cur.close()
-    return
+                # Guard against duplicate IDs across runs
+                if row_id not in hit_ids:
+                    hit_ids.append(row_id)
+                    updated = ",".join(hit_ids)
+                    add.custom_query(
+                        "UPDATE organism SET hit_id = %s WHERE organism_name = %s;",
+                        params=(updated, organism),
+                        returns=False
+                    )
+                    db.commit()
+
+            else:
+                print(f"New organism: {organism}")
+                already_in.add(organism)
+
+                try:
+                    tax = get_taxonomy(row["accession_code"])
+                except (RuntimeError, ValueError) as e:
+                    print(f"Skipping '{organism}': taxonomy fetch failed — {e}")
+                    continue
+
+                add.column["organism_name"] = organism
+                add.column["family"] = tax["family"]
+                add.column["genus"] = tax["genus"]
+                add.column["species"] = tax["species"]
+                add.column["hit_id"] = row_id
+                print(organism,tax["family"],tax["genus"],tax["species"],row_id)
+                add.insert()
+                db.commit()
+                cur.close()
+
+                # Respect NCBI rate limit (max 3 requests/sec)
+                sleep(0.34)
+
+        except Exception as e:
+            print(f"Unexpected error processing row {row}: {e}")
+            db.rollback()
+
+        finally:
+            cur.close()
 
 
 
-def get_taxonomy(acc_code: str) -> dict:
-    """+
+def get_taxonomy(taxid: str ) -> dict:
+    """
     Retrieve taxonomy information from NCBI Taxonomy.
 
     Parameters
     ----------
-    acc_code : str
-        NCBI Taxonomy ID
+    taxid : str
+        NCBI Taxonomy ID (e.g. "9606" for Homo sapiens)
 
     Returns
     -------
     dict
         {
-            "acc_code": ...,
+            "taxid": ...,
             "organism_name": ...,
             "species": ...,
             "genus": ...,
             "family": ...,
+            "class": ...,
         }
+
+    Raises
+    ------
+    ValueError
+        If no record is found for the given taxid
+    RuntimeError
+        If the NCBI request fails
     """
 
-    with Entrez.efetch(
-        db="taxonomy",
-        id=acc_code,
-        retmode="xml"
-    ) as handle:
+    try:
+        with Entrez.efetch(db="taxonomy", id=taxid, retmode="xml") as handle:
+            records = Entrez.read(handle)
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch taxonomy for taxid '{taxid}': {e}") from e
 
-        record = Entrez.read(handle)[0]
+    if not records:
+        raise ValueError(f"No taxonomy record found for taxid '{taxid}'")
 
+    record = records[0]
 
     taxonomy = {
-        "taxid": record.get("TaxId"),
-        "organism_name": record.get("ScientificName"),
-        "species": "NO SPECIES FOUND",
-        "genus": "NO GENUS FOUND",
-        "family": "NO FAMILY FOUND",
+        "taxid": record.get("TaxId") or "No TaxId Found",
+        "organism_name": record.get(
+            "ScientificName") or "No Organism Name Found",
+        "species": "No Species Found",
+        "genus": "No Genus Found",
+        "family": "No Family Found",
+        "class": "No Class Found",
     }
 
-    # Species
+    # If the queried taxon itself is species rank, capture it directly
     if record.get("Rank") == "species":
-        taxonomy["species"] = record["ScientificName"]
+        scientific_name = record.get("ScientificName")
+        if scientific_name:
+            taxonomy["species"] = scientific_name
 
-    # Walk lineage
+    # Walk lineage to fill in ranks
     for node in record.get("LineageEx", []):
-
         rank = node.get("Rank")
         name = node.get("ScientificName")
 
-        if rank == "genus":
-            taxonomy["genus"] = name
+        if not rank or not name:
+            continue
 
+        if rank == "species" and taxonomy["species"] == "No Species Found":
+            taxonomy["species"] = name
+        elif rank == "genus":
+            taxonomy["genus"] = name
         elif rank == "family":
             taxonomy["family"] = name
-
-
         elif rank == "class":
             taxonomy["class"] = name
 
