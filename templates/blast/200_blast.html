@@ -12,69 +12,100 @@
 
 {% block content %}
     <main>
-        <!-- Filter Section -->
-        <section class="blast-hero">
-            <form method="GET" class="blast-toolbar">
+        <section class="blast-controls">
+            <span class="section-title">Filter results</span>
+
+            <form method="GET" class="blast-filters">
                 <div class="search">
-                    {{ form.search_word.label }} {{ form.search_word(size=25) }}
-                    <div class="form_errors">
-                        {% if form.search_word.errors %}
-                            <ul>
-                                {% for error in form.search_word.errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </div>
+                    {{ form.search_word(size=25,
+                        placeholder="Protein, organism or description…") }}
                 </div>
 
-                <input type="submit" value="Search">
-                <button type="button"
-                        onclick="routeToPath('{{ url_for('seq200blast') }}')
-                                ">Reset
-                </button>
-            </form>
+                <div class="filter-grid">
+                    <label class="field">
+                        <span>Organism</span>
+                        {{ form.organism() }}
+                    </label>
+                    <label class="field">
+                        <span>Min identity %</span>
+                        {{ form.min_identity(type="number", step="any", placeholder="50") }}
+                    </label>
+                    <label class="field">
+                        <span>Min score</span>
+                        {{ form.min_score(type="number", step="any", placeholder="300") }}
+                    </label>
+                    <label class="field">
+                        <span>Min bits</span>
+                        {{ form.min_bits(type="number", step="any", placeholder="120") }}
+                    </label>
+                    <label class="field">
+                        <span>Max E-value</span>
+                        {{ form.max_evalue(placeholder="1e-10") }}
+                    </label>
+                    <label class="field">
+                        <span>Sort by</span>
+                        {{ form.sort_by() }}
+                    </label>
+                    <label class="field">
+                        <span>Order</span>
+                        {{ form.sort_order() }}
+                    </label>
+                </div>
 
-            <div class="result-count">
-                <strong>{{ data|length }} Rows Found</strong>
-            </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn">Apply filters</button>
+                    <a class="btn-ghost" href="{{ url_for('seq200blast') }}">Reset</a>
+                </div>
+
+                {% if form.search_word.errors %}
+                    <ul class="form_errors">
+                        {% for error in form.search_word.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </form>
         </section>
 
-        <!-- Content -->
+        <div class="result-count">
+            <strong>{{ data|length }}</strong> rows found
+        </div>
+
         <section class="blast-table-wrap">
             {% if data|length == 0 %}
-                <span class="no-match">No Data Found</span>
+                <p class="no-match">No data matches your filters</p>
             {% else %}
-                <table id="blastTable">
-                    <thead>
-                    <tr>
-                        {% for col in columns %}
-                            <th>{{ col }}</th>
-                        {% endfor %}
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for item in data %}
-                        <tr onclick="routeToRowPage('{{ item['id'] }}')">
+                <div class="table-scroll">
+                    <table id="blastTable">
+                        <thead>
+                        <tr>
                             {% for col in columns %}
-                                {% if col == 'id' %}
-                                    <th class="cell-num">{{ item[col] }}</th>
-                                {% else %}
-                                    {% if filters['search_word'] %}
-                                        <td>{{ (item[col] | string).replace
-                                                (filters['search_word'],
-                                                '<mark>' ~
-                                                filters.search_word ~
-                                                '</mark>') | safe }}</td>
-                                    {% else %}
-                                        <td>{{ item[col] }}</td>
-                                    {% endif %}
-                                {% endif %}
+                                <th>{{ col }}</th>
                             {% endfor %}
                         </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {% for item in data %}
+                            <tr onclick="routeToRowPage('{{ item['id'] }}')">
+                                {% for col in columns %}
+                                    {% if col == 'id' %}
+                                        <th class="cell-num">{{ item[col] }}</th>
+                                    {% else %}
+                                        {% if filters['search_word'] %}
+                                            <td>{{ (item[col] | string).replace(
+                                                filters['search_word'],
+                                                '<mark>' ~ filters.search_word ~ '</mark>')
+                                                | safe }}</td>
+                                        {% else %}
+                                            <td>{{ item[col] }}</td>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% endif %}
         </section>
     </main>
@@ -83,6 +114,5 @@
         function routeToRowPage(row) {
             window.open(`/200seq_blast/${row}`, "_blank");
         }
-
     </script>
 {% endblock %}

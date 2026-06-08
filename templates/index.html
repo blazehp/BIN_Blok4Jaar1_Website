@@ -1,148 +1,177 @@
 {% extends 'layout.html' %}
 
 {% block meta %}
-<link rel="stylesheet" href="/static/styles/home.css">
+    <link rel="stylesheet" href="/static/styles/home.css">
 {% endblock %}
 
 {% block title %}Bio-Informatics Python Website{% endblock %}
 
 {% block header %}
-<section class="hero">
-    <div class="hero-text">
-        <span class="section-title">Onderzoeksverslag • Blok 4 • Jaar 1</span>
-        <h1>Decoding life in&nbsp;<span class="hl">hot compost</span></h1>
-        <p class="hero-desc">
-            A bio-informatics pipeline that takes raw DNA sequences,
-            runs them through NCBI BLAST, and maps the proteins and
-            organisms thriving inside thermophilic compost &mdash; from
-            fungi to the wider tree of life.
-        </p>
-        <div class="hero-actions">
-            <a href="/blast" class="btn">Explore BLAST results &rarr;</a>
-            <a href="/docs" class="btn-ghost">Read the documentation</a>
+    <section class="hero">
+        <div class="hero-text">
+            <span class="section-title">Onderzoeksverslag • Blok 4 • Jaar 1</span>
+            <h1>Mapping the microflora of&nbsp;<span class="hl">mushroom compost</span>
+            </h1>
+            <p class="hero-desc">
+                A bio-informatics pipeline that takes raw nucleotide sequences
+                from compost metagenomics, runs them through NCBI BLAST, and
+                maps the proteins and organisms making up the microflora
+                &mdash;
+                the bacteria and fungi that share the substrate used to
+                cultivate
+                the button mushroom <em>Agaricus bisporus</em>.
+            </p>
+            <div class="hero-actions">
+                <a href="/blast" class="btn">Explore BLAST results &rarr;</a>
+                <a href="/docs" class="btn-ghost">Read the documentation</a>
+            </div>
         </div>
-    </div>
-    <figure class="hero-media">
-        <img src="/static/hot_compost.jpg" alt="Hot compost sample" width="1000" height="1000" draggable="false">
-        <figcaption>Thermophilic compost &mdash; the study environment</figcaption>
-    </figure>
-</section>
+        <figure class="hero-media">
+            <img src="/static/hot_compost.jpg" alt="Hot compost sample"
+                 width="1000" height="1000" draggable="false">
+            <figcaption>Mushroom cultivation compost &mdash; the study
+                environment
+            </figcaption>
+        </figure>
+    </section>
 {% endblock %}
 
 {% block content %}
-<main class="home">
+    <main class="home">
+        <br>
 
-    <!-- Stat strip -->
-    <section class="stats">
-        <div class="stat">
-            <span class="stat-title">blastx</span>
-            <span class="stat-desc">NCBI program</span>
-        </div>
-        <div class="stat">
-            <span class="stat-title">5</span>
-            <span class="stat-desc">linked data tables</span>
-        </div>
-        <div class="stat">
-            <span class="stat-title">e&minus;value</span>
-            <span class="stat-desc">filtered for confidence</span>
-        </div>
-        <div class="stat">
-            <span class="stat-title">Python</span>
-            <span class="stat-desc">+ Quart &amp; MySQL</span>
-        </div>
-    </section>
+        <!-- Stat strip -->
+        <section class="stats">
+            <div class="stat">
+                <span class="stat-title">blastx</span>
+                <span class="stat-desc">NCBI program</span>
+            </div>
+            <div class="stat">
+                <span class="stat-title">5</span>
+                <span class="stat-desc">linked data tables</span>
+            </div>
+            <div class="stat">
+                <span class="stat-title">e&minus;value</span>
+                <span class="stat-desc">filtered for confidence</span>
+            </div>
+            <div class="stat">
+                <span class="stat-title">Python</span>
+                <span class="stat-desc">+ Quart &amp; MySQL</span>
+            </div>
+        </section>
 
-    <!-- Overview -->
-    <section class="overview" id="overview">
-        <div class="overview-head">
-            <span class="section-title">The project</span>
-            <h2>An end-to-end sequence analysis platform</h2>
-        </div>
-        <div class="overview-body">
-            <p class="lead">
-                This project investigates the microbial and fungal life found
-                in <strong>hot compost</strong>. Sequences collected from the
-                samples are submitted to the NCBI BLAST service, parsed, and
-                persisted into a relational database.
-            </p>
-            <p>
-                The web platform makes that pipeline tangible: an admin
-                dashboard manages the raw and filtered hits, the BLAST page
-                presents the matches in a clean table, and the analysis view
-                visualises the taxonomic spread of every organism we identify.
-            </p>
-        </div>
-    </section>
-
-    <!-- Pipeline -->
-    <section class="pipeline">
-        <span class="section-title">How it works</span>
-        <h2>From sequence to species</h2>
-        <ol class="pipeline-steps">
-            <li class="step">
-                <span class="step-num">01</span>
-                <h3>Input</h3>
-                <p>Raw nucleotide sequences are imported and stored, each
-                    tagged with a unique run identifier.</p>
-            </li>
-            <li class="step">
-                <span class="step-num">02</span>
-                <h3>BLAST</h3>
-                <p>Every sequence is queried against the NCBI
-                    <em>nr</em> database using <code>blastx</code>.
+        <!-- Overview -->
+        <section class="overview" id="overview">
+            <div class="overview-head">
+                <span class="section-title">The project</span>
+                <h2>An end-to-end sequence analysis platform</h2>
+            </div>
+            <div class="overview-body">
+                <p class="lead">
+                    This project investigates the microflora living in the
+                    <strong>compost used to grow mushrooms</strong> &mdash; the
+                    bacteria and fungi that drive its fermentation, shape its
+                    quality, and can help or hinder the cultivated
+                    <em>Agaricus bisporus</em>. Sequences from the compost
+                    metagenomics are submitted to the NCBI BLAST service,
+                    parsed,
+                    and persisted into a relational database.
                 </p>
-            </li>
-            <li class="step">
-                <span class="step-num">03</span>
-                <h3>Filter</h3>
-                <p>Hits are scored and filtered on e-value, identity and
-                    bit-score to keep only confident matches.</p>
-            </li>
-            <li class="step">
-                <span class="step-num">04</span>
-                <h3>Analyse</h3>
-                <p>Proteins and organisms are normalised into tables and
-                    visualised as a taxonomic sunburst.</p>
-            </li>
-        </ol>
-    </section>
+                <p>
+                    The web platform makes that pipeline tangible: an admin
+                    dashboard manages the raw and filtered hits, the BLAST page
+                    presents the matches in a clean, searchable table, and the
+                    analysis view visualises the taxonomic spread of every
+                    organism
+                    the sequences resolve to.
+                </p>
+            </div>
+        </section>
 
-    <!-- Feature cards -->
-    <section class="features">
-        <article class="feature-card">
-            <div class="feature-card-media">
-                <img src="/static/mushroom.jpg" alt="Fungi found in compost" width="1000" height="1000"
-                    draggable="false">
-            </div>
-            <div class="feature-card-body">
-                <span class="section-title">Organisms</span>
-                <h3>A census of the compost</h3>
-                <p>From <em>Rozellida</em> to chordates, we catalogue every
-                    organism a sequence resolves to &mdash; with fungi taking
-                    centre stage.</p>
-                <a href="/analysis" class="card-link">View the analysis &rarr;</a>
-            </div>
-        </article>
-        <article class="feature-card">
-            <div class="feature-card-media">
-                <img src="/static/hot_compost_truck.jpg" alt="Compost collection">
-            </div>
-            <div class="feature-card-body">
-                <span class="section-title">Data</span>
-                <h3>Every hit, queryable</h3>
-                <p>Raw and filtered BLAST results live in a structured
-                    database, browsable directly from the BLAST results table.</p>
-                <a href="/blast" class="card-link">Open BLAST results &rarr;</a>
-            </div>
-        </article>
-    </section>
+        <!-- Pipeline -->
+        <section class="pipeline">
+            <span class="section-title">How it works</span>
+            <h2>From sequence to species</h2>
+            <ol class="pipeline-steps">
+                <li class="step">
+                    <span class="step-num">01</span>
+                    <h3>Input</h3>
+                    <p>Raw nucleotide sequences from the compost samples are
+                        imported and stored, each tagged with a unique run
+                        identifier.</p>
+                </li>
+                <li class="step">
+                    <span class="step-num">02</span>
+                    <h3>BLAST</h3>
+                    <p>Every sequence is translated and queried against the
+                        NCBI
+                        <em>nr</em> database with <code>blastx</code> to find
+                        homologous proteins.
+                    </p>
+                </li>
+                <li class="step">
+                    <span class="step-num">03</span>
+                    <h3>Filter</h3>
+                    <p>Hits are scored and filtered on e-value, identity and
+                        bit-score to keep only confident matches.</p>
+                </li>
+                <li class="step">
+                    <span class="step-num">04</span>
+                    <h3>Analyse</h3>
+                    <p>Matched proteins and organisms are normalised into
+                        linked
+                        tables and visualised as a taxonomic sunburst.</p>
+                </li>
+            </ol>
+        </section>
 
-    <!-- Closing call to action -->
-    <section class="cta">
-        <h2>Ready to dig in?</h2>
-        <p>Jump straight into the matched proteins and organisms.</p>
-        <a href="/blast" class="btn">View BLAST results &rarr;</a>
-    </section>
+        <!-- Feature cards -->
+        <section class="features">
+            <article class="feature-card">
+                <div class="feature-card-media">
+                    <img src="/static/mushroom.jpg"
+                         alt="Fungi found in compost" width="1000"
+                         height="1000"
+                         draggable="false">
+                </div>
+                <div class="feature-card-body">
+                    <span class="section-title">Organisms</span>
+                    <h3>A census of the compost</h3>
+                    <p>Every confident hit resolves to an organism &mdash; from
+                        the
+                        microbes that survive pasteurisation to the fungi
+                        sharing
+                        the substrate &mdash; building a picture of the
+                        microflora
+                        around <em>Agaricus bisporus</em>.</p>
+                    <a href="/analysis" class="card-link">View the analysis
+                        &rarr;</a>
+                </div>
+            </article>
+            <article class="feature-card">
+                <div class="feature-card-media">
+                    <img src="/static/hot_compost_truck.jpg"
+                         alt="Compost collection">
+                </div>
+                <div class="feature-card-body">
+                    <span class="section-title">Data</span>
+                    <h3>Every hit, queryable</h3>
+                    <p>Raw and filtered BLAST results live in a structured
+                        relational database, browsable directly from the BLAST
+                        results table.</p>
+                    <a href="/blast" class="card-link">Open BLAST results
+                        &rarr;</a>
+                </div>
+            </article>
+        </section>
 
-</main>
+        <!-- Closing call to action -->
+        <section class="cta">
+            <h2>Ready to dig in?</h2>
+            <p>Jump straight into the proteins and organisms matched in the
+                compost.</p>
+            <a href="/blast" class="btn">View BLAST results &rarr;</a>
+        </section>
+
+    </main>
 {% endblock %}

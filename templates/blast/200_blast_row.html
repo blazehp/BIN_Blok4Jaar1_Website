@@ -11,5 +11,87 @@
 {% endblock %}
 
 {% block content %}
-    
+    <main>
+        {% if not data %}
+            <section class="empty-state">
+                <div class="empty-state-mark">🔍</div>
+                <h3>Hit not found</h3>
+                <p>We couldn't find that record.</p>
+                <a class="btn" href="{{ url_for('seq200blast') }}">Back to
+                    results</a>
+            </section>
+        {% else %}
+            <section class="row-header">
+                <span class="section-title">BLAST hit detail</span>
+                <h2>{{ data['protein_name'] }}</h2>
+                <p class="row-sub">
+                    <span class="badge">{{ data['accession_code'] }}</span>
+                    <em>{{ data['organism_name'] }}</em>
+                </p>
+            </section>
+
+            <section class="stat-grid">
+                <div class="stat-card">
+                    <div class="label">E-value</div>
+                    <div class="value">{{ data['e_value'] }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Score</div>
+                    <div class="value">{{ data['score'] }}</div>
+                    <div class="sub">run avg {{ stats.avg_score }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Bits</div>
+                    <div class="value">{{ data['bits'] }}</div>
+                    <div class="sub">run avg {{ stats.avg_bits }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Identity</div>
+                    <div class="value">{{ data['identity_perc'] }}%</div>
+                    <div class="sub">run avg {{ stats.avg_identity }}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Coverage</div>
+                    <div class="value">
+                        {{ stats.coverage if stats.coverage is not none else '—' }}
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Rank in run</div>
+                    <div class="value">#{{ stats.rank }}</div>
+                    <div class="sub">of {{ stats.total }} hits</div>
+                </div>
+            </section>
+
+            <section class="chart-grid">
+                <div class="chart-card">
+                    <h4>Identity vs. run</h4>
+                    <img class="chart-img" src="{{ charts.identity }}"
+                         alt="Identity percentage">
+                </div>
+                <div class="chart-card">
+                    <h4>This hit vs. run average</h4>
+                    <img class="chart-img" src="{{ charts.compare }}"
+                         alt="This hit versus run average">
+                </div>
+                <div class="chart-card chart-wide">
+                    <h4>Top hits by score (this hit highlighted)</h4>
+                    <img class="chart-img" src="{{ charts.top_hits }}"
+                         alt="Top hits by score">
+                </div>
+            </section>
+
+            {% if data['description'] %}
+                <section class="row-desc">
+                    <h4>Description</h4>
+                    <p>{{ data['description'] }}</p>
+                </section>
+            {% endif %}
+
+            <p style="margin-top:24px;">
+                <a class="btn-ghost" href="{{ url_for('seq200blast') }}">← Back
+                    to results</a>
+            </p>
+        {% endif %}
+    </main>
 {% endblock %}
