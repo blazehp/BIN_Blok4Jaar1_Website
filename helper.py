@@ -1,8 +1,6 @@
 import io
 import base64
 import matplotlib
-from openpyxl.worksheet.datavalidation import collapse_cell_addresses
-from pandas.conftest import lexsorted_two_level_string_multiindex
 
 from database_config import db
 from database_manager import InputTable, RawBlastTable, OrganismTable, ProteinTable
