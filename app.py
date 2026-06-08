@@ -67,6 +67,8 @@ class BlastFilterForm(QuartForm):
 
 @app.route('/200seq_blast', defaults={'row_id': None})
 @app.route('/200seq_blast/<int:row_id>', methods=["GET", "POST"])
+
+
 async def seq200blast(row_id):
     form = await BlastFilterForm.create_form()
     cur = db.cursor(dictionary=True)
@@ -89,7 +91,7 @@ async def seq200blast(row_id):
     max_evalue = to_float(request.args.get("max_evalue"))
     sort_by = request.args.get("sort_by", "score")
     sort_order = request.args.get("sort_order", "desc")
-    
+
     # keep the form widgets showing the active values
     form.search_word.data = search_word or ""
     form.organism.data = organism or ""
@@ -161,8 +163,8 @@ async def seq200blast(row_id):
         return await render_template('blast/200_blast_row.html',
                                      query_id=match["run_id"], data=match,
                                      stats=stats, charts=charts)
-    
-    # cap at 50 only when nothing is being filtered
+
+        # cap at 50 only when nothing is being filtered
     any_filter = any(v for v in (search_word, organism, min_identity,
                                  min_score, min_bits, max_evalue))
     display = result if any_filter else result[:50]

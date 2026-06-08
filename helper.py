@@ -1,7 +1,11 @@
 import io
 import base64
 import matplotlib
+from openpyxl.worksheet.datavalidation import collapse_cell_addresses
+from pandas.conftest import lexsorted_two_level_string_multiindex
 
+from database_config import db
+from database_manager import InputTable, RawBlastTable, OrganismTable, ProteinTable
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -15,25 +19,25 @@ def to_float(value):
 
 def build_row_stats(row, run_rows):
     """Aggregate the row's run for stat cards + chart payloads."""
-    
+
     def fnum(r, key):
         return to_float(r.get(key))
-    
+
     scores = [fnum(r, "score") for r in run_rows if
               fnum(r, "score") is not None]
     bits = [fnum(r, "bits") for r in run_rows if fnum(r, "bits") is not None]
     idents = [fnum(r, "identity_perc") for r in run_rows if
               fnum(r, "identity_perc") is not None]
     avg = lambda xs: round(sum(xs) / len(xs), 2) if xs else 0
-    
+
     ranked = sorted(run_rows, key=lambda r: fnum(r, "score") or float("-inf"),
                     reverse=True)
     rank = next((i for i, r in enumerate(ranked, 1) if r["id"] == row["id"]),
                 None)
-    
+
     # DB column is sometimes spelled "converage" — handle both
     coverage = row.get("coverage", row.get("converage"))
-    
+
     stats = {
         "rank": rank, "total": len(run_rows),
         "avg_score": avg(scores), "avg_bits": avg(bits),
@@ -41,7 +45,7 @@ def build_row_stats(row, run_rows):
         "max_score": max(scores) if scores else 0,
         "coverage": coverage,
     }
-    
+
     top = ranked[:10]
     chart_data = {
         "identity": fnum(row, "identity_perc") or 0,
@@ -114,3 +118,80 @@ def render_row_charts(chart_data):
     charts["top_hits"] = make_chart(fig)
     
     return charts
+
+
+def render_data_desc(hit_id) -> dict :
+    """
+    Collect information about a hit to display in the description.
+    :param hit_id from filtered_blast:
+    :return: dictionary = {
+        "protein_name": None,
+        "protein_function": None,
+        "organism_name": None,
+        "family": None,
+        "sex": None,
+        "species": None,
+        "sequence": None,
+    }
+    """
+
+    book = {
+        "protein_name": None,
+        "protein_function": None,
+        "organism_name": None,
+        "family": None,
+        "sex": None,
+        "species": None,
+        "sequence": None,
+    }
+    #collect Organism and Protein Name
+    cur = db.cursor()
+    collect_raw = RawBlastTable(cur)
+    collected = collect_raw.custom_query("Select protein_name, organism_name,run_id from filtered_blast where id = %s;",params=(hit_id,),returns=True)
+    if len(collected) == 0:
+        print(f"Hit {hit_id} not found in database")
+        book["protein_name"] = 'ERROR RETRIEVING INFORMATION'
+        book["organism_name"] = 'ERROR RETRIEVING INFORMATION'
+        return book
+    else:
+        book["protein_name"] = collected[0][0]
+        book["organism_name"] = collected[0][1]
+        q_id = collected[0][2]
+
+    cur.close()
+
+    #collect Taxonomy
+    cur = db.cursor()
+    collect_tax = OrganismTable(cur)
+    collected_tax = collect_tax.custom_query("Select family, genus, species from organism where organism_name = %s;",params=(book["organism_name"],),returns=True)
+    if len(collected) == 0:
+        book["family"] = 'ERROR RETRIEVING INFORMATION'
+        book["genus"] = 'ERROR RETRIEVING INFORMATION'
+        book["species"] = 'ERROR RETRIEVING INFORMATION'
+    else:
+        book["family"] = collected_tax[0][0]
+        book["genus"] = collected_tax[0][1]
+        book["species"] = collected_tax[0][2]
+    cur.close()
+
+    #collect function
+    cur = db.cursor()
+    collect_func = ProteinTable(cur)
+    collected_func = collect_func.custom_query("select protein_function where organism_name = %s;",params=(book["organism_name"],),returns=True)
+    if len(collected_func) == 0:
+        book["protein_function"] = 'ERROR RETRIEVING INFORMATION'
+    else:
+        book["protein_function"] = collected_func[0][0]
+    cur.close()
+
+    #collect sequence
+    cur = db.cursor()
+    collect_input = InputTable(cur)
+    collected_input = collect_input.custom_query("select sequence from input where run_id = %s;",params=(q_id,),returns=True)
+    if len(collected_input) == 0:
+        book["sequence"] = 'ERROR RETRIEVING INFORMATION'
+    else:
+        book["sequence"] = collected_input[0][0]
+    cur.close()
+
+    return book

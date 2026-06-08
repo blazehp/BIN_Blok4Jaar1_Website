@@ -233,8 +233,8 @@ def seek_tax():
 
                 try:
                     tax = get_taxonomy(row["accession_code"])
-                except (RuntimeError, ValueError) as e:
-                    print(f"Skipping '{organism}': taxonomy fetch failed — {e}")
+                except (RuntimeError, ValueError) as error:
+                    print(f"Skipping '{organism}': taxonomy fetch failed — {error}")
                     continue
 
                 add.column["organism_name"] = organism
@@ -250,8 +250,8 @@ def seek_tax():
                 # Respect NCBI rate limit (max 3 requests/sec)
                 sleep(0.34)
 
-        except Exception as e:
-            print(f"Unexpected error processing row {row}: {e}")
+        except Exception as error:
+            print(f"Unexpected error processing row {row}: {error}")
             db.rollback()
 
         finally:
@@ -333,6 +333,5 @@ def get_taxonomy(taxid: str ) -> dict:
             taxonomy["class"] = name
 
     return taxonomy
-
 
 seek_tax()
