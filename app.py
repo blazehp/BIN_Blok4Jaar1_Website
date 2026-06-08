@@ -6,7 +6,7 @@ import time
 from dotenv import load_dotenv
 
 from _webcreds import write_creds as write_env
-from analysis import species_graph
+from analysis import species_graph, all_species_graph
 
 load_dotenv()
 PORT = os.getenv("PORT")
@@ -76,6 +76,7 @@ async def docs():
 @app.route('/analysis')
 async def analysis():
     species_graph()
+    all_species_graph()
     return await render_template('analysis.html')
 
 

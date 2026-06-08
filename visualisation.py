@@ -7,7 +7,7 @@ def create_piechart(values: dict, title: str):
 
     plt.pie(values.values(), labels=keys)
     plt.title(title)
-    plt.savefig("graphs/" + title + ".svg")
+    plt.savefig("static/" + title + ".svg")
     plt.show()
 
 
