@@ -166,7 +166,6 @@ class OrganismTable(_DatabaseManager):
         "species", "hit_id"], Any] = {
             "organism_name": None,
             "family": None,
-            "sex": None,
             "species": None,
             "hit_id": None
         }

@@ -1,5 +1,5 @@
 from database_config import db
-from database_manager import InputTable, RawBlastTable, _DatabaseManager, \
+from database_manager import InputTable, RawBlastTable, \
     ProteinTable, FilteredBlast, OrganismTable
 from Bio import Entrez , SeqIO
 import requests
@@ -75,22 +75,20 @@ def filter_raw() -> tuple:
 
 
 def seek_protein():
-
     cur = db.cursor(dictionary=True)
     cur_select = RawBlastTable(cur)
-    contents = cur_select.custom_query("select distinct id , protein_name, accession_code from filtered_blast where accession_code != '-' ;",True)
-    cur.close()
+    contents = cur_select.custom_query("select distinct id , protein_name, accession_code from filtered_blast where accession_code != '-';",True)
+    # cur.close()
     already_in = set()
 
+#     cur = db.cursor(dictionary=True)
     for row in contents:
-
-        cur = db.cursor(dictionary=True)
         add = ProteinTable(cur)
 
         if row["protein_name"] in already_in:
             result = add.custom_query(
                 "SELECT hit_id FROM protein WHERE protein_name = %s;",
-                params=(row['protein_name'],),
+                params=(row['protein_name']),
                 returns=True
             )
             hit_ids = result[0]["hit_id"].split(",")
@@ -99,8 +97,7 @@ def seek_protein():
             updated = ",".join(hit_ids)
             add.custom_query(
                 "UPDATE protein SET hit_id = %s WHERE protein_name = %s;",
-                params=(updated, row['protein_name']),
-                returns=False
+                params=(updated, row['protein_name'])
             )
             db.commit()
 
@@ -114,7 +111,7 @@ def seek_protein():
             db.commit()
             sleep(0.33)
 
-        cur.close()
+    cur.close()
     return
 
 
@@ -194,20 +191,20 @@ def seek_tax():
         "FROM filtered_blast WHERE accession_code != '-';",
         returns=True
     )
-    cur.close()
-
+    # cur.close()
+    #
+    # cur = db.cursor(dictionary=True)
     for row in contents:
         organism = row["organism_name"]
         row_id = str(row["id"])
 
-        cur = db.cursor(dictionary=True)
         add = OrganismTable(cur)
 
         try:
             if organism in already_in:
                 result = add.custom_query(
                     "SELECT hit_id FROM organism WHERE organism_name = %s;",
-                    params=(organism,),
+                    params=(organism),
                     returns=True
                 )
                 if not result:
@@ -245,19 +242,16 @@ def seek_tax():
                 print(organism,tax["family"],tax["genus"],tax["species"],row_id)
                 add.insert()
                 db.commit()
-                cur.close()
 
                 # Respect NCBI rate limit (max 3 requests/sec)
                 sleep(0.34)
-
         except Exception as error:
             print(f"Unexpected error processing row {row}: {error}")
             db.rollback()
-
-        finally:
-            cur.close()
-
-
+            
+    # Close cursor after loop is done
+    cur.close()
+    return
 
 def get_taxonomy(taxid: str ) -> dict:
     """
