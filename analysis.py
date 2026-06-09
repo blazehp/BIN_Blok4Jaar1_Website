@@ -56,7 +56,7 @@ def species_graph():
             ]),
         ]),
     ]
-    vs.create_sunburst_chart(data, title="Speciestest")
+    vs.create_sunburst_chart(data, title="speciestest")
 
 
 if __name__ == '__main__':
