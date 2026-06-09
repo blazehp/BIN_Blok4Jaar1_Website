@@ -1,8 +1,8 @@
 """`database_manager.py`: Contains utility class(es) and function(s) to
 safely and properly manage the database from one place."""
 from typing import Literal, Any
+import warnings
 
-from numpy import array as np_array
 from mysql.connector.abstracts import MySQLCursorAbstract
 
 class _DatabaseManager:
@@ -33,19 +33,19 @@ class _DatabaseManager:
     
     def insert(self):
         """Insert values for all columns in table."""
-        # try:
-        columns = ','.join([key for key in self.data.keys()])
+        try:
+            columns = ','.join([key for key in self.data.keys()])
             # Using placeholders + tuple data to allow None values
-        value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
-        values = tuple(self.data.values())
-        if None in values:
-            raise ValueError
-        query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
-        self.cursor.execute(query, params=values)
-        # except ValueError:
-        #      print("Check inputted values. Cannot insert NONE values")
-        # except:
-        #      print("Error inserting into Database")
+            value_placeholders = ','.join([f"%s" for _ in self.data.keys()])
+            values = tuple(self.data.values())
+            if None in values:
+                warnings.warn("Inserting NONE values may cause errors")
+            query = f"INSERT INTO {self.table} ({columns}) VALUES ({value_placeholders})"
+            self.cursor.execute(query, params=values)
+        except ValueError:
+            print("Check inputted values.")
+        except:
+            print("Error inserting into Database; ")
     
     def update(self, position, pvalue):
         """
@@ -87,20 +87,22 @@ class _DatabaseManager:
         query = f"DELETE FROM {self.table} WHERE id = {record_id}"
         self.cursor.execute(query)
         return None
-    
-    def custom_query(self, query: str, returns: bool = False):
+
+    def custom_query(self, query: str, returns: bool = False,
+                     params: tuple = None):
         """
         Run a custom query into the database.
-        
+
         Parameters:
             query (str): The raw **MYSQL** query
-            returns (bool): weither or not the query returns data
+            returns (bool): whether or not the query returns data
+            params (tuple): optional parameters for the query
         """
         if returns:
-            self.cursor.execute(query)
+            self.cursor.execute(query, params)
             return self.cursor.fetchall()
-        
-        self.cursor.execute(query)
+
+        self.cursor.execute(query, params)
         return None
     
 class InputTable(_DatabaseManager):
@@ -160,11 +162,10 @@ class ProteinTable(_DatabaseManager):
 
 class OrganismTable(_DatabaseManager):
     def __init__(self, cur: MySQLCursorAbstract):
-        self.column: dict[Literal["organism_name", "family", "sex",
+        self.column: dict[Literal["organism_name", "family", "genus",
         "species", "hit_id"], Any] = {
             "organism_name": None,
             "family": None,
-            "sex": None,
             "species": None,
             "hit_id": None
         }

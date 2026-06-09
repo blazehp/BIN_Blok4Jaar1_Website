@@ -2,16 +2,1031 @@
 
 {% block meta %}
     <link rel="stylesheet" href="/static/styles/tech_doc.css">
+
+    <!-- Self-contained styling so the page renders cleanly even before
+         tech_doc.css is filled in. Everything is scoped under .td so it
+         doesn't clash with main.css. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Spline+Sans+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet">
 {% endblock %}
 
-{% block title %}Documentation{% endblock %}
+{% block title %}Technical Documentation{% endblock %}
 
 {% block header %}
-    <h1>Documentation</h1>
+    <h1>Technical Documentation</h1>
 {% endblock %}
 
 {% block content %}
-    <main>
-        <i>Doc</i>
-    </main>
+    <div class="td">
+        <div class="td-shell">
+
+            <!-- ============ TABLE OF CONTENTS ============ -->
+            <aside class="td-toc">
+                <div class="toc-label">Overview</div>
+                <a href="#pipeline">Mental model ( the pipeline )</a>
+
+                <div class="toc-label">Web layer</div>
+                <a href="#main">Main ( app.py )</a>
+                <a href="#routes">Routes</a>
+
+                <div class="toc-label">Data layer</div>
+                <a href="#db-config">database_config.py</a>
+                <a href="#db-manager">database_manager.py</a>
+
+                <div class="toc-label">The pipeline</div>
+                <a href="#parsing">parsing.py</a>
+                <a href="#blast">BLAST.py</a>
+                <a href="#filtering">filtering.py</a>
+                <a href="#retrieve">retrieve_protein.py</a>
+
+                <div class="toc-label">Visualisation</div>
+                <a href="#helper">helper.py</a>
+                <a href="#visualisation">visualisation.py</a>
+                <a href="#analysis">analysis.py</a>
+
+                <div class="toc-label">Reference</div>
+                <a href="#schema">Database schema</a>
+                <a href="#issues">Known issues &amp; security</a>
+            </aside>
+
+            <!-- ============ MAIN ============ -->
+            <main class="td-main">
+
+                <!-- ===================== INTRO ===================== -->
+                <section id="intro">
+                    <p class="doc-title">SHROOMDB DOCUMENTATION</p>
+                    <p class="last-updated">Last Updated: June 8, 2026</p>
+
+                    <p class="lede">
+                        This documentation covers the whole
+                        <strong>ShroomDB</strong>
+                        codebase &mdash; every route, every function, what
+                        they're used
+                        for, how they work and how the pieces fit together.
+                        ShroomDB is a
+                        <a href="https://quart.palletsprojects.com/en/latest/"
+                           target="_blank" class="hl">Quart</a> (
+                        async
+                        Python ) website
+                        that maps the
+                        microflora of mushroom compost: it takes raw nucleotide
+                        sequences,
+                        runs them through <a
+                            href="https://blast.ncbi.nlm.nih.gov/Blast.cgi"
+                            target="_blank" class="hl">NCBI
+                        BLAST</a>,
+                        retrieves the
+                        hits with protein and taxonomy data, stores
+                        everything in
+                        a MySQL database, and serves it through a searchable
+                        web interface.
+                    </p>
+
+                    <div class="note">
+                        This is an <b>Interactive</b> documentation. The
+                        contents on the
+                        left and the links throughout jump you straight to the
+                        section you
+                        need.
+                    </div>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== PIPELINE ===================== -->
+                <section id="pipeline">
+                    <h2><span class="kicker">Overview</span>Mental model ( the
+                        pipeline )</h2>
+
+                    <div class="flow">input → raw_blast → filtered_blast →
+                        protein / organism
+                    </div>
+
+                    <ol>
+                        <li><strong>Input</strong> →
+                            <code>BLAST.fill_db()</code> reads an
+                            Excel file which contains a segment (100 forward
+                            + 100 reverse) of the
+                            sequences found in the compost and
+                            writes
+                            each sequence
+                            into the
+                            <code>input</code> table ( with an empty <code>run_id</code>
+                            ).
+                        </li>
+                        <li><strong>BLAST</strong> → every not-yet-blasted
+                            sequence is
+                            submitted to NCBI with <code>blastx</code>, and
+                            <em>every</em>
+                            hit it returns is stored in <code>raw_blast</code>.
+                        </li>
+                        <li><strong>Filter</strong> → <code>filtering.filter_raw()</code>
+                            keeps only the confident hits and copies them into
+                            <code>filtered_blast</code>.
+                            <span class="aside">*This is the table the website actually serves.</span>
+                        </li>
+                        <li><strong>Retrieval</strong> →
+                            <code>seek_protein()</code> and
+                            <code>seek_tax()</code> take the distinct proteins
+                            and organisms
+                            out of <code>filtered_blast</code> and look up
+                            their function
+                            ( <a href="https://www.uniprot.org/"
+                                 target="_blank"
+                                 class="hl">UniProt</a> ) and
+                            taxonomy ( NCBI
+                            ), filling the
+                            <code>protein</code> and <code>organism</code>
+                            tables.
+                        </li>
+                        <li><strong>Serve</strong> → the Quart routes read
+                            <code>filtered_blast</code> and render the tables,
+                            the detail
+                            pages and the analysis chart.
+                        </li>
+                    </ol>
+
+                    <p>
+                        The neat part is the separation: the <strong>web
+                        layer</strong> only
+                        ever <em>reads</em> the finished tables. All the slow,
+                        network-heavy
+                        work ( BLAST, <a href="https://www.uniprot.org/"
+                                         target="_blank"
+                                         class="hl">UniProt</a>, NCBI ) runs
+                        separately in the
+                        pipeline files.
+                    </p>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== MAIN ===================== -->
+                <section id="main">
+                    <h2><span class="kicker">Web layer</span>Main ( app.py )
+                    </h2>
+                    <p class="filedesc">
+                        The <code>app.py</code> file is where the server starts
+                        and where all
+                        the routes live. It's also where the filter form and
+                        the database
+                        table creation are defined.
+                    </p>
+
+                    <p>
+                        On startup, it loads the <code>.env</code>, reads the
+                        <code>PORT</code> ( fallback <code>3000</code> ),
+                        builds the Quart
+                        app, and wires up <strong>CSRF protection</strong>
+                        using the
+                        <code>CSRF_SECRET_KEY</code>. It also forces <strong>Matplotlib</strong>
+                        onto the headless <code>Agg</code> backend &mdash; this
+                        is what lets
+                        the server draw charts without a display attached.
+                    </p>
+                    <p>
+                        When you run <code>app.py</code> directly
+                        ( <code>python3 app.py</code> ), the
+                        <code>if __name__ == '__main__'</code> block runs all
+                        the
+                        <code>CREATE TABLE IF NOT EXISTS</code> statements for
+                        the five
+                        tables <em>first</em>, then starts the server. Debug
+                        mode is only
+                        turned on when <code>PORT == "3000"</code>.
+                    </p>
+
+                    <p>A few helpers live here too:</p>
+                    <ul>
+                        <li><strong><code>BlastFilterForm</code></strong> → a
+                            <a href="https://quart-wtf.readthedocs.io/en/latest/"
+                               target="_blank"
+                               class="hl">WTForms</a>
+                            form
+                            describing the filter controls on the 200-sequence
+                            page.
+                            <code>search_word</code> is free text; <code>organism</code>
+                            is a
+                            dropdown filled in at request time; <code>min_identity</code>
+                            /
+                            <code>min_score</code> / <code>min_bits</code> are
+                            optional
+                            numbers; <code>max_evalue</code> is deliberately a
+                            <em>string</em>
+                            field so scientific notation like
+                            <code>1e-10</code> survives.
+                            <code>sort_by</code> and <code>sort_order</code>
+                            control the
+                            ordering.
+                        </li>
+                        <li><strong><code>blast_querying()</code></strong> →
+                            grabs every
+                            <code>input</code> row whose <code>run_id</code> is
+                            still
+                            <code>NULL</code> ( aka not blasted yet ), runs
+                            <code>BLAST.query()</code> on each, and sleeps 20
+                            seconds between
+                            calls to stay under NCBI's rate limit.
+                        </li>
+                        <li><strong><code>delete_table()</code></strong> →
+                            drops tables in
+                            dependency order.
+                            <span class="aside">*DANGER: only for a full wipe.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== ROUTES ===================== -->
+                <section id="routes">
+                    <h2><span class="kicker">Web layer</span>Routes</h2>
+                    <p>
+                        Below are all the routes the app exposes. Same idea as
+                        a normal API
+                        &mdash; each one renders a page or kicks off a job.
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/</span></h3>
+                    <p>The index route. Renders the landing page ( <code>index.html</code>
+                        ).</p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/blast</span></h3>
+                    <p>The picker page. Lets you choose between the <strong>200
+                        Sequences</strong>
+                        view and the <strong>Self BLAST</strong> view.</p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/200seq_blast</span></h3>
+                    <p>
+                        The workhorse route. This is the searchable results
+                        table, and it's
+                        worth explaining in full because it does a lot:
+                    </p>
+                    <ol>
+                        <li>It fetches <strong>all</strong> rows from
+                            <code>filtered_blast</code> in a single query.
+                        </li>
+                        <li>It builds the organism dropdown from the distinct
+                            organism names
+                            in those rows.
+                        </li>
+                        <li>It reads each filter from the query string, coerces
+                            the numbers
+                            with <code>to_float()</code>, and copies them back
+                            onto the form
+                            <em>( so the inputs stay filled in after you hit
+                                submit )</em>.
+                        </li>
+                        <li>It filters the rows <strong>in Python</strong>
+                            using a local
+                            <code>keep()</code> function &mdash; text search
+                            across protein /
+                            organism / description, plus the numeric thresholds
+                            and an
+                            e-value ceiling &mdash; then sorts by the chosen
+                            column.
+                        </li>
+                        <li>It caps the list at 50 rows when no filter is
+                            active, and shows
+                            everything once any filter is set.
+                        </li>
+                    </ol>
+                    <p class="aside">
+                        *Why filter in Python instead of SQL? Because fetching
+                        once and
+                        filtering in memory means no user input ever touches a
+                        SQL string
+                        ( no injection ), and the e-value math stays correct
+                        since e-values
+                        are stored as text.
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/200seq_blast/&lt;int:row_id&gt;</span>
+                    </h3>
+                    <p>
+                        Same handler as above, but with a <code>row_id</code>.
+                        This branch
+                        renders the <strong>single-hit detail page</strong>: it
+                        finds the
+                        row, gathers every hit in the same run, computes the
+                        stat cards and
+                        chart data via <code>build_row_stats()</code>, renders
+                        the three
+                        charts with <code>render_row_charts()</code>, and hands
+                        it all to the
+                        detail template.
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/self-blast</span></h3>
+                    <p>The Self BLAST page. Currently a stub
+                        <em>( the template is there, the logic isn't yet )</em>.
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/analysis</span></h3>
+                    <p>
+                        Calls <code>species_graph()</code> to ( re )generate
+                        the taxonomic
+                        sunburst SVG, then renders <code>analysis.html</code>,
+                        which just
+                        <code>&lt;img&gt;</code>-tags the saved file.
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/docs</span></h3>
+                    <p>This page.</p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/admin</span></h3>
+                    <p>
+                        The table browser. Reads a <code>?table=</code> query
+                        param, checks
+                        it against a hard-coded <strong>whitelist</strong> of
+                        the five table
+                        names, selects everything from that table, then
+                        converts the raw
+                        tuples into a list of dicts ( column name → value ) so
+                        the template
+                        can address cells by name.
+                        <span class="aside">*That whitelist is the thing keeping the f-string query safe.</span>
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/run_blast</span></h3>
+                    <p>
+                        Triggers a BLAST run. Because
+                        <code>blast_querying()</code> is slow
+                        and blocking, this route offloads it to a thread with
+                        <code>run_in_executor()</code> and immediately returns
+                        <code>"Blasting..."</code> so the request doesn't hang.
+                    </p>
+
+                    <h3><span class="badge risk">[GET]</span> <span
+                            class="route">/_creds</span></h3>
+                    <p>
+                        Returns the database credentials as JSON.
+                        <strong>This is a localhost-only route and a security
+                            risk</strong>
+                        &mdash; see <a class="inline" href="#issues">Known
+                        Issues</a>.
+                    </p>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== db config ===================== -->
+                <section id="db-config">
+                    <h2><span class="kicker">Data layer</span>database_config.py
+                    </h2>
+                    <p class="filedesc">
+                        This file centralises the MySQL connection so the rest
+                        of the
+                        codebase never has to think about it.
+                    </p>
+                    <p>
+                        It reads every connection setting from environment
+                        variables
+                        ( <code>DB_USER</code>, <code>DB_PASSWORD</code>,
+                        <code>DB_HOST</code>,
+                        <code>DB_PORT</code>, <code>DB_DATABASE</code> and the
+                        pool settings ),
+                        so no credentials live in the source code.
+                    </p>
+                    <ul>
+                        <li><strong><code>class DB</code></strong> → wraps the
+                            connector. Its
+                            <code>connect()</code> method returns the existing
+                            live
+                            connection if one is already open, otherwise it
+                            opens a new
+                            pooled one.
+                        </li>
+                        <li><strong><code>db</code></strong> → at the bottom of
+                            the file,
+                            <code>db = DB().connect()</code> creates <strong>one
+                                shared
+                                connection</strong>. Every other file imports
+                            it with
+                            <code>from database_config import db</code>. Think
+                            of it as the
+                            single doorway into the database.
+                        </li>
+                    </ul>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== db manager ===================== -->
+                <section id="db-manager">
+                    <h2><span class="kicker">Data layer</span>database_manager.py
+                    </h2>
+                    <p class="filedesc">
+                        This is the one place that knows how to safely read and
+                        write the
+                        database. Everything else goes through it.
+                    </p>
+                    <p>
+                        The base class is <strong><code>_DatabaseManager</code></strong>,
+                        and
+                        there's one subclass per table that pre-loads the right
+                        columns. You
+                        always use it the same way: make an instance with a
+                        cursor, fill its
+                        <code>.column[...]</code> dict, then call a method.
+                    </p>
+
+                    <h4><code>_DatabaseManager</code> methods</h4>
+                    <ul>
+                        <li><strong><code>select(columns="all")</code></strong>
+                            → runs
+                            <code>SELECT *</code> ( or specific columns ) and
+                            returns all
+                            rows.
+                        </li>
+                        <li><strong><code>insert()</code></strong> → inserts
+                            the current
+                            <code>data</code> dict using
+                            <strong>placeholders</strong>
+                            ( <code>%s</code> + a value tuple ). Injection-safe
+                            and allows
+                            <code>None</code> values.
+                            <span class="aside">*It warns you if any value is <code>None</code>.</span>
+                        </li>
+                        <li><strong><code>update(position,
+                            pvalue)</code></strong> → runs one
+                            <code>UPDATE</code> per non-<code>None</code>
+                            column, matching on
+                            <code>position = pvalue</code>.
+                        </li>
+                        <li><strong><code>delete(record_id)</code></strong> →
+                            deletes the row
+                            with that id.
+                        </li>
+                        <li><strong><code>custom_query(query, returns,
+                            params)</code></strong>
+                            → the escape hatch for raw SQL. Pass
+                            <code>params</code> to use
+                            safe placeholders, and <code>returns=True</code>
+                            when you expect
+                            data back.
+                        </li>
+                    </ul>
+
+                    <p>
+                        <strong>The table subclasses</strong> &mdash;
+                        <code>InputTable</code>, <code>RawBlastTable</code>,
+                        <code>FilteredBlast</code>, <code>ProteinTable</code>,
+                        <code>OrganismTable</code> &mdash; each just define
+                        their column dict
+                        and hand it to the base class.
+                    </p>
+
+                    <div class="warn">
+                        <b>Two things to watch.</b> <code>update()</code> and
+                        <code>delete()</code> build their SQL by string
+                        interpolation
+                        ( not placeholders ), so they're <em>not</em>
+                        injection-safe &mdash;
+                        only call them with trusted values. And <code>OrganismTable</code>
+                        defines a <code>"sex"</code> key where it almost
+                        certainly means
+                        <code>"genus"</code>, which clashes with what <code>seek_tax()</code>
+                        writes later.
+                    </div>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== parsing ===================== -->
+                <section id="parsing">
+                    <h2><span class="kicker">The pipeline</span>parsing.py</h2>
+                    <p class="filedesc">A tiny file with one job: read the
+                        course Excel file.</p>
+                    <ul>
+                        <li><strong><code>parse_excel(file_path,
+                            sheet_name)</code></strong> →
+                            reads the spreadsheet with no header row and slices
+                            it into two
+                            two-column frames ( columns 0–1 and columns 3–5 ),
+                            returned as a
+                            tuple. The dataset stores two sequence reads side
+                            by side, so this
+                            splits them &mdash; <code>BLAST.fill_db()</code>
+                            later recombines
+                            and de-duplicates the sequence column from both
+                            halves.
+                        </li>
+                    </ul>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== BLAST ===================== -->
+                <section id="blast">
+                    <h2><span class="kicker">The pipeline</span>BLAST.py</h2>
+                    <p class="filedesc">
+                        This is where sequences actually get sent to NCBI and
+                        the results get
+                        parsed into the database.
+                    </p>
+                    <ul>
+                        <li><strong><code>query(sequence,
+                            seq_id)</code></strong> → the core
+                            BLAST call. It submits one sequence with
+                            <code>NCBIWWW.qblast(program="blastx",
+                                database="nr", ...)</code>,
+                            parses the returned XML, and reads the first
+                            record. The record's
+                            <code>query_id</code> is written back onto the
+                            matching
+                            <code>input</code> row ( aka marking it as blasted
+                            ). Then it
+                            loops twice:
+                            <ul>
+                                <li>For each <strong>alignment</strong> ( a hit
+                                    ), a regular
+                                    expression pulls the <strong>accession
+                                        code</strong>,
+                                    <strong>description</strong> and <strong>organism</strong>
+                                    out of the hit title.
+                                </li>
+                                <li>For each <strong>HSP</strong> inside that
+                                    alignment, it
+                                    records the e-value, bit-score, raw
+                                    identity count, score
+                                    and a coverage percentage
+                                    ( <code>align_length / query_length ×
+                                        100</code> ),
+                                    derives a clean protein name by stripping
+                                    the organism out
+                                    of the description, and inserts a row into
+                                    <code>raw_blast</code>.
+                                </li>
+                            </ul>
+                        </li>
+                        <li><strong><code>fill_db(path)</code></strong> →
+                            parses the Excel
+                            file, concatenates the sequence column from both
+                            reads, drops the
+                            blanks, and awaits <code>push_to_db()</code> for
+                            each one.
+                        </li>
+                        <li><strong><code>push_to_db(sequence)</code></strong>
+                            → inserts a
+                            single sequence into the <code>input</code> table.
+                        </li>
+                    </ul>
+                    <p class="aside">
+                        *Heads up: the <code>identity_perc</code> column is
+                        filled from
+                        <code>hsp.identities</code>, which is the raw count of
+                        identical
+                        residues &mdash; not a percentage. Worth converting if
+                        you want a true %.
+                    </p>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== filtering ===================== -->
+                <section id="filtering">
+                    <h2><span class="kicker">The pipeline</span>filtering.py
+                    </h2>
+                    <p class="filedesc">
+                        This file turns the messy <code>raw_blast</code> table
+                        into the clean
+                        <code>filtered_blast</code> table, then retrieves
+                        the protein and taxonomy data.
+                    </p>
+                    <ul>
+                        <li><strong><code>evaluate(e_value, bit_score, score,
+                            identity)</code></strong>
+                            → the confidence gate. Returns <code>True</code>
+                            only if a hit
+                            clears every threshold ( bit-score, score and
+                            identity each ≥ 50 )
+                            and passes the e-value test.
+                            <span class="aside">*See the warning below &mdash; the e-value check looks inverted.</span>
+                        </li>
+                        <li><strong><code>filter_raw()</code></strong> → reads
+                            every row from
+                            <code>raw_blast</code>, skips the ones whose <code>run_id</code>
+                            is <code>'-'</code>, runs each survivor through
+                            <code>evaluate()</code>, and inserts the passing
+                            ones into
+                            <code>filtered_blast</code>.
+                        </li>
+                        <li><strong><code>seek_protein()</code></strong> →
+                            reads the distinct
+                            proteins out of <code>filtered_blast</code> and
+                            builds the
+                            <code>protein</code> table. For a protein it hasn't
+                            seen before,
+                            it looks up the function with <code>get_protein_function()</code>
+                            and inserts a new row; for one it <em>has</em>
+                            seen, it appends
+                            the new hit id to that protein's comma-separated
+                            <code>hit_id</code> list. A <code>0.33s</code>
+                            sleep between new
+                            entries keeps it under the <a
+                                    href="https://www.uniprot.org/"
+                                    target="_blank"
+                                    class="hl">UniProt</a> rate limit.
+                        </li>
+                        <li>
+                            <strong><code>get_protein_function(protein_name)</code></strong>
+                            →
+                            hits the <strong><a href="https://www.uniprot.org/"
+                                                target="_blank"
+                                                class="hl">UniProt</a> REST API</strong>:
+                            searches for the
+                            protein, takes the top accession, fetches that
+                            entry's
+                            <code>cc_function</code> annotation, and returns
+                            the FUNCTION
+                            text. Every failure mode ( no result, HTTP error,
+                            connection
+                            error, timeout ) returns a descriptive sentinel
+                            string instead of
+                            crashing, so the caller always gets something it
+                            can store.
+                        </li>
+                        <li><strong><code>seek_tax()</code></strong> → the
+                            taxonomy twin of
+                            <code>seek_protein()</code>. Walks the distinct
+                            organisms in
+                            <code>filtered_blast</code> and fills the <code>organism</code>
+                            table with family / genus / species, de-duplicating
+                            by appending
+                            hit ids.
+                        </li>
+                        <li>
+                            <strong><code>get_taxonomy(acc_code)</code></strong>
+                            → calls
+                            <strong><a
+                                    href="https://www.ncbi.nlm.nih.gov/search/"
+                                    target="_blank" class="hl">NCBI
+                                Entrez</a></strong> (
+                            <code>efetch</code>
+                            against the
+                            taxonomy database ), reads the record, and walks
+                            its lineage to
+                            pull out the genus and family ranks.
+                        </li>
+                    </ul>
+
+                    <div class="warn">
+                        <b>⚠ Likely inverted e-value filter.</b> <code>evaluate()</code>
+                        does
+                        <code>if e_value &lt; 1e-30: return False</code>, which
+                        rejects the
+                        <em>most</em> significant hits &mdash; smaller e-values
+                        mean
+                        <em>better</em> matches. This almost certainly should
+                        reject hits
+                        whose e-value is too <em>large</em>. Double-check
+                        before trusting the
+                        filtered set.
+                    </div>
+                    <div class="warn">
+                        <b>⚠ Import-time side effects.</b> The module ends with
+                        a bare
+                        <code>seek_tax()</code> call, so simply
+                        <em>importing</em>
+                        <code>filtering</code> kicks off a full taxonomy run.
+                        It also imports
+                        a name from <code>retrieve_protein.py</code>, which
+                        runs its own
+                        network code on import. Both should be guarded behind
+                        <code>if __name__ == "__main__":</code>. Also note
+                        <code>get_taxonomy()</code> is handed an <em>accession
+                        code</em> where
+                        Entrez taxonomy expects a numeric <em>taxon id</em>.
+                    </div>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== retrieve ===================== -->
+                <section id="retrieve">
+                    <h2><span class="kicker">The pipeline</span>retrieve_protein.py
+                    </h2>
+                    <p class="filedesc">A small scratchpad / reference script
+                        for the <a href="https://www.uniprot.org/"
+                                   target="_blank"
+                                   class="hl">UniProt</a> API.</p>
+                    <p>
+                        It demonstrates Biopython's
+                        <code>Bio.UniProt.search</code> against a
+                        sample query ( reviewed SARS-CoV-2 proteins ) and
+                        prints accessions
+                        and organism names. It reads more like a
+                        proof-of-concept than part
+                        of the live pipeline.
+                    </p>
+                    <p class="aside">
+                        *Because <code>filtering.py</code> imports a name from
+                        this file, its
+                        top-level code runs on import. Wrapping the demo in a
+                        <code>main</code> guard avoids surprise network calls.
+                    </p>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== helper ===================== -->
+                <section id="helper">
+                    <h2><span class="kicker">Visualisation</span>helper.py</h2>
+                    <p class="filedesc">
+                        Everything the single-hit detail page needs &mdash; the
+                        stats and the
+                        charts. Matplotlib is pinned to the <code>Agg</code>
+                        backend here too.
+                    </p>
+                    <ul>
+                        <li><strong><code>to_float(value)</code></strong> →
+                            safe float
+                            conversion. Returns <code>None</code> instead of
+                            crashing on bad
+                            input. Used all over the filtering code.
+                        </li>
+                        <li><strong><code>build_row_stats(row, run_rows)</code></strong>
+                            →
+                            given one hit and all the hits in its run, it
+                            computes the stat
+                            cards ( the row's rank by score, the run totals,
+                            the average score
+                            / bits / identity ) and assembles a <code>chart_data</code>
+                            payload ( identity, a this-hit-vs-run-average
+                            comparison, and the
+                            top-10 hits by score with the current hit flagged
+                            ).
+                            <span class="aside">*It tolerates the <code>coverage</code> / <code>converage</code> spelling difference by checking both.</span>
+                        </li>
+                        <li><strong><code>make_chart(fig)</code></strong> →
+                            renders a
+                            Matplotlib figure to a transparent PNG,
+                            base64-encodes it, and
+                            returns a <code>data:</code> URI. This is the trick
+                            that lets the
+                            templates drop charts straight into <code>&lt;img
+                                src&gt;</code>
+                            with no files written to disk.
+                        </li>
+                        <li><strong><code>render_row_charts(chart_data)</code></strong>
+                            →
+                            produces the three charts: an identity pie, a
+                            grouped bar chart of
+                            this hit vs the run average, and a horizontal bar
+                            chart of the top
+                            hits by score with the current one highlighted. The
+                            colors are
+                            mirrored from <code>blast.css</code>.
+                        </li>
+                    </ul>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== visualisation ===================== -->
+                <section id="visualisation">
+                    <h2><span class="kicker">Visualisation</span>visualisation.py
+                    </h2>
+                    <p class="filedesc">The chart-drawing toolkit &mdash; pie
+                        charts and the taxonomic sunburst.</p>
+                    <ul>
+                        <li><strong><code>create_piechart(values, title)</code></strong>
+                            →
+                            plots a labelled pie chart from a <code>{ label:
+                                value }</code>
+                            dict and saves it as an SVG under
+                            <code>graphs/</code>.
+                        </li>
+                        <li><strong><code>create_sunburst_chart(nodes, title,
+                            ...)</code></strong>
+                            → a <strong>recursive</strong> radial renderer that
+                            draws a
+                            hierarchical taxonomy as a sunburst. Each node is a
+                            <code>( label, value, subnodes )</code> tuple.
+                            Think of it like
+                            drawing rings from the inside out: the function
+                            descends level by
+                            level, draws one ring of bars per level with each
+                            wedge's width
+                            proportional to its value, and recurses into the
+                            children. At the
+                            root it flips the polar axis to read clockwise from
+                            the top, hides
+                            the axes, and saves the result as an SVG under
+                            <code>static/</code>.
+                        </li>
+                    </ul>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== analysis ===================== -->
+                <section id="analysis">
+                    <h2><span class="kicker">Visualisation</span>analysis.py
+                    </h2>
+                    <p class="filedesc">The bridge between the pipeline and the
+                        <code>/analysis</code> page.</p>
+                    <ul>
+                        <li><strong><code>species_graph()</code></strong> →
+                            right now it's a
+                            <strong>placeholder</strong>: it builds a
+                            hard-coded taxonomy tree
+                            and hands it to
+                            <code>create_sunburst_chart()</code>, saving the
+                            SVG the analysis page displays. The commented-out
+                            lines show the
+                            intended direction &mdash; querying the real tables
+                            to build the
+                            tree from actual data.
+                        </li>
+                    </ul>
+                    <div class="warn">
+                        <b>⚠ Filename casing.</b> <code>species_graph()</code>
+                        saves with the
+                        title <code>"Speciestest"</code> ( capital S ), but
+                        <code>analysis.html</code> requests <code>speciestest.svg</code>
+                        ( lowercase ). On a case-sensitive filesystem ( Linux )
+                        the image
+                        won't load until the casing matches.
+                    </div>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== schema ===================== -->
+                <section id="schema">
+                    <h2><span class="kicker">Reference</span>Database schema
+                    </h2>
+                    <p>Five tables, all created in <code>app.py</code>'s <code>__main__</code>
+                        block.</p>
+                    <div class="td-table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Key columns</th>
+                                <th>Role</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td><code>input</code></td>
+                                <td><code>id</code>, <code>sequence</code>,
+                                    <code>run_id</code> ( unique )
+                                </td>
+                                <td>Raw ingested sequences; <code>run_id</code>
+                                    gets filled once blasted
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>raw_blast</code></td>
+                                <td><code>run_id</code> ( FK→input ), <code>accession_code</code>,
+                                    <code>e_value</code>, <code>score</code>,
+                                    <code>bits</code>,
+                                    <code>identity_perc</code>,
+                                    <code>converage</code></td>
+                                <td>Every hit / HSP from BLAST, unfiltered</td>
+                            </tr>
+                            <tr>
+                                <td><code>filtered_blast</code></td>
+                                <td>same shape as <code>raw_blast</code></td>
+                                <td><strong>The confident hits only &mdash;
+                                    what the website serves</strong></td>
+                            </tr>
+                            <tr>
+                                <td><code>protein</code></td>
+                                <td><code>protein_name</code>, <code>protein_function</code>,
+                                    <code>hit_id</code></td>
+                                <td>Distinct proteins + <a
+                                        href="https://www.uniprot.org/"
+                                        target="_blank"
+                                        class="hl">UniProt</a> function;
+                                    <code>hit_id</code> is a CSV of source rows
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>organism</code></td>
+                                <td><code>organism_name</code>,
+                                    <code>family</code>, <code>species</code>,
+                                    <code>hit_id</code></td>
+                                <td>Distinct organisms + NCBI taxonomy</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="aside">
+                        *The coverage column is spelled <code>converage</code>
+                        in the schema;
+                        <code>build_row_stats()</code> already handles both
+                        spellings, but
+                        it's worth fixing at the source. The
+                        <code>organism</code> table is
+                        also created with a <code>sex</code> column and no
+                        <code>genus</code> column, which conflicts with what
+                        <code>seek_tax()</code> writes.
+                    </p>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== issues ===================== -->
+                <section id="issues">
+                    <h2><span class="kicker">Reference</span>Known issues &amp;
+                        security</h2>
+                    <p>
+                        Collected here so they're easy to find. None of these
+                        break the demo,
+                        but they're all worth fixing before the project is
+                        graded or put
+                        anywhere public.
+                    </p>
+                    <ol>
+                        <li><strong>/_creds exposes secrets.</strong> This
+                            route hands the DB
+                            username, password and CSRF secret to anyone who
+                            asks. Remove it
+                            or lock it strictly behind debug-only access.
+                            <span class="aside">*This is the urgent one.</span>
+                        </li>
+                        <li><strong>Inverted e-value filter.</strong> <code>evaluate()</code>
+                            currently rejects the strongest hits
+                            ( see <a class="inline" href="#filtering">filtering.py</a>
+                            ).
+                            Check the comparison direction.
+                        </li>
+                        <li><strong>Import-time side effects.</strong> <code>filtering.py</code>
+                            runs <code>seek_tax()</code> on import, and
+                            importing it drags in
+                            <code>retrieve_protein.py</code> which also hits
+                            the network.
+                            Guard both with a <code>__main__</code> check.
+                        </li>
+                        <li><strong>String-built SQL in <code>update()</code> /
+                            <code>delete()</code>.</strong>
+                            These are injection-prone; use the safe placeholder
+                            pattern from
+                            <code>insert()</code> / <code>custom_query()</code>
+                            everywhere.
+                        </li>
+                        <li><strong>Missing admin CRUD routes.</strong> The
+                            admin template's
+                            Add / Edit / Delete buttons point at routes that
+                            don't exist in
+                            <code>app.py</code> yet.
+                        </li>
+                        <li><strong><code>PORT</code> type mismatch.</strong>
+                            It's set to the
+                            integer <code>3000</code> on startup but compared
+                            against the
+                            string <code>"3000"</code> later, so the two never
+                            match.
+                            Normalise it to one type.
+                        </li>
+                        <li><strong>Schema mismatches.</strong> The <code>converage</code>
+                            typo, the <code>sex</code>-vs-<code>genus</code>
+                            organism column,
+                            and the <code>Speciestest.svg</code> casing all
+                            need
+                            reconciling.
+                        </li>
+                    </ol>
+                </section>
+
+                <hr class="section-rule">
+
+                <!-- ===================== legend ===================== -->
+                <section id="legend">
+                    <p class="legend">
+                        Color code legend:<br>
+                        <span class="swatch"
+                              style="background:#088732;"></span>Green <code>#088732</code>
+                        → <span class="badge get">[GET]</span><br>
+                        <span class="swatch"
+                              style="background:#CC1F1F;"></span>Red <code>#CC1F1F</code>
+                        → <span
+                            class="badge risk">[risk / destructive]</span><br>
+                        <span class="swatch"
+                              style="background:#1F76CC;"></span>Blue <code>#1F76CC</code>
+                        → <span class="badge post">[POST]</span><br>
+                        <span class="swatch"
+                              style="background:#1EC7AD;"></span>Teal <code>#1EC7AD</code>
+                        → titles
+                    </p>
+                </section>
+
+            </main>
+        </div>
+    </div>
 {% endblock %}

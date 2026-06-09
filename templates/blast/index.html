@@ -13,15 +13,17 @@
 {% block content %}
     <main>
         <section class="blast-page-picker">
-            <!-- 200 Sequence BLAST Analysis -->
-         <a href="/200seq_blast">
-            <span>200 Sequences</span>
-         </a>
+            <a href="/200seq_blast" class="picker-card">
+                <span class="picker-icon">🧬</span>
+                <span class="picker-title">200 Sequences</span>
+                <span class="picker-sub">Browse pre-computed BLAST hits</span>
+            </a>
 
-         <!-- Self BLAST -->
-          <a href="/self-blast">
-            <span>Self BLAST</span>
-          </a>
+            <a href="/self-blast" class="picker-card">
+                <span class="picker-icon">🔬</span>
+                <span class="picker-title">Self BLAST</span>
+                <span class="picker-sub">Run a sequence against the set</span>
+            </a>
         </section>
     </main>
 {% endblock %}

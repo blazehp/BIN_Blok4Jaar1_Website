@@ -12,6 +12,8 @@
     --accent-bright: #588157;
     --accent-soft: #a3b18a;
     --accent-tint: #eef1e9;
+    --border: #3a5a40;
+
 
     --danger: #b3261e;
 
@@ -131,6 +133,10 @@ main, header {
     margin-inline: 30px;
 }
 
+main {
+    min-height: 100vh;
+}
+
 .section-title {
     display: inline-block;
     font-size: 0.78rem;
@@ -211,4 +217,69 @@ main, header {
 .site-footer-links {
     display: flex;
     gap: 22px;
+}
+
+.protein-card {
+    border: 1px solid var(--border, #e2e0d8);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+}
+
+.protein-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border, #e2e0d8);
+}
+
+.protein-card__header h3 { font-size: 1.1rem; font-weight: 500; margin: 0; }
+.protein-card__sub      { font-size: 0.85rem; color: var(--muted, #6b6860); margin-top: 3px; }
+
+.protein-card__body {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border, #e2e0d8);
+    background: var(--accent, #f0f7f4);
+}
+
+.protein-card__meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border-bottom: 1px solid var(--border, #e2e0d8);
+}
+
+.protein-card__meta-cell {
+    padding: 1rem 1.5rem;
+}
+
+.protein-card__meta-cell:first-child {
+    border-right: 1px solid var(--border, #e2e0d8);
+}
+
+.protein-card__label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted, #6b6860);
+    margin-bottom: 4px;
+}
+
+.protein-card__function { font-size: 0.9rem; line-height: 1.6; margin: 0; }
+
+.protein-card__seq { padding: 1.25rem 1.5rem; }
+
+.protein-card__seq pre {
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    background: #f5f4ef;
+    border: 1px solid var(--border, #e2e0d8);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 2;
+    letter-spacing: 0.05em;
 }
