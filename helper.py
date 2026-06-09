@@ -118,9 +118,10 @@ def render_row_charts(chart_data):
     return charts
 
 
-def render_data_desc(hit_id) -> dict :
+def render_data_desc(hit_id, query_id) -> dict :
     """
     Collect information about a hit to display in the description.
+    :param query_id from filtered_blast:
     :param hit_id from filtered_blast:
     :return: dictionary = {
         "protein_name": None,
@@ -145,7 +146,7 @@ def render_data_desc(hit_id) -> dict :
     #collect Organism and Protein Name
     cur = db.cursor()
     collect_raw = RawBlastTable(cur)
-    collected = collect_raw.custom_query("Select protein_name, organism_name,run_id from filtered_blast where id = %s;",params=(hit_id,),returns=True)
+    collected = collect_raw.custom_query("Select protein_name, organism_name from filtered_blast where id = %s;",params=(hit_id,),returns=True)
     if len(collected) == 0:
         print(f"Hit {hit_id} not found in database")
         book["protein_name"] = 'ERROR RETRIEVING INFORMATION'
@@ -154,7 +155,6 @@ def render_data_desc(hit_id) -> dict :
     else:
         book["protein_name"] = collected[0][0]
         book["organism_name"] = collected[0][1]
-        q_id = collected[0][2]
 
     cur.close()
 
@@ -162,7 +162,8 @@ def render_data_desc(hit_id) -> dict :
     cur = db.cursor()
     collect_tax = OrganismTable(cur)
     collected_tax = collect_tax.custom_query("Select family, genus, species from organism where organism_name = %s;",params=(book["organism_name"],),returns=True)
-    if len(collected) == 0:
+
+    if len(collected_tax) == 0:
         book["family"] = 'ERROR RETRIEVING INFORMATION'
         book["genus"] = 'ERROR RETRIEVING INFORMATION'
         book["species"] = 'ERROR RETRIEVING INFORMATION'
@@ -175,7 +176,7 @@ def render_data_desc(hit_id) -> dict :
     #collect function
     cur = db.cursor()
     collect_func = ProteinTable(cur)
-    collected_func = collect_func.custom_query("select protein_function where organism_name = %s;",params=(book["organism_name"],),returns=True)
+    collected_func = collect_func.custom_query("select protein_function from protein where protein_name = %s;",params=(book["protein_name"],),returns=True)
     if len(collected_func) == 0:
         book["protein_function"] = 'ERROR RETRIEVING INFORMATION'
     else:
@@ -185,7 +186,7 @@ def render_data_desc(hit_id) -> dict :
     #collect sequence
     cur = db.cursor()
     collect_input = InputTable(cur)
-    collected_input = collect_input.custom_query("select sequence from input where run_id = %s;",params=(q_id,),returns=True)
+    collected_input = collect_input.custom_query("select sequence from input where run_id = %s;",params=(query_id,),returns=True)
     if len(collected_input) == 0:
         book["sequence"] = 'ERROR RETRIEVING INFORMATION'
     else:

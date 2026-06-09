@@ -23,7 +23,7 @@ from database_manager import FilteredBlast
 from quart_wtf import QuartForm, CSRFProtect
 from wtforms import StringField, SelectField, FloatField
 from wtforms.validators import Optional, NumberRange
-from helper import to_float, build_row_stats, render_row_charts
+from helper import to_float, build_row_stats, render_row_charts, render_data_desc
 import matplotlib
 matplotlib.use("Agg")
 
@@ -73,7 +73,7 @@ async def seq200blast(row_id):
     form = await BlastFilterForm.create_form()
     cur = db.cursor(dictionary=True)
     flblast_db = FilteredBlast(cur)
-    
+
     # Fetch once, filter in Python: no SQL injection, and correct e-value math
     all_rows = flblast_db.select() or []
     
@@ -160,9 +160,11 @@ async def seq200blast(row_id):
                     r.get("run_id") == match.get("run_id")]
         stats, chart_data = build_row_stats(match, run_rows)
         charts = render_row_charts(chart_data)
+        description = render_data_desc(match.get("id"), match.get("run_id"),)
+        print(description)
         return await render_template('blast/200_blast_row.html',
                                      query_id=match["run_id"], data=match,
-                                     stats=stats, charts=charts)
+                                     stats=stats, charts=charts,desc = description )
 
         # cap at 50 only when nothing is being filtered
     any_filter = any(v for v in (search_word, organism, min_identity,

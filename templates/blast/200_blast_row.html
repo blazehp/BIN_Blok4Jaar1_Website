@@ -11,57 +11,56 @@
 {% endblock %}
 
 {% block content %}
-    <main>
-        {% if not data %}
-            <section class="empty-state">
-                <div class="empty-state-mark">🔍</div>
-                <h3>Hit not found</h3>
-                <p>We couldn't find that record.</p>
-                <a class="btn" href="{{ url_for('seq200blast') }}">Back to
-                    results</a>
-            </section>
-        {% else %}
-            <section class="row-header">
-                <span class="section-title">BLAST hit detail</span>
-                <h2>{{ data['protein_name'] }}</h2>
-                <p class="row-sub">
-                    <span class="badge">{{ data['accession_code'] }}</span>
-                    <em>{{ data['organism_name'] }}</em>
-                </p>
-            </section>
+<main>
+    {% if not data %}
+        <section class="empty-state">
+            <div class="empty-state-mark">🔍</div>
+            <h3>Hit not found</h3>
+            <p>We couldn't find that record.</p>
+            <a class="btn" href="{{ url_for('seq200blast') }}">Back to results</a>
+        </section>
+    {% else %}
+        <section class="row-header">
+            <span class="section-title">BLAST hit detail</span>
+            <h2>{{ data['protein_name'] }}</h2>
+            <p class="row-sub">
+                <span class="badge">{{ data['accession_code'] }}</span>
+                <em>{{ data['organism_name'] }}</em>
+            </p>
+        </section>
 
-            <section class="stat-grid">
-                <div class="stat-card">
-                    <div class="label">E-value</div>
-                    <div class="value">{{ data['e_value'] }}</div>
+        <section class="stat-grid">
+            <div class="stat-card">
+                <div class="label">E-value</div>
+                <div class="value">{{ data['e_value'] }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Score</div>
+                <div class="value">{{ data['score'] }}</div>
+                <div class="sub">run avg {{ stats.avg_score }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Bits</div>
+                <div class="value">{{ data['bits'] }}</div>
+                <div class="sub">run avg {{ stats.avg_bits }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Identity</div>
+                <div class="value">{{ data['identity_perc'] }}%</div>
+                <div class="sub">run avg {{ stats.avg_identity }}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Coverage</div>
+                <div class="value">
+                    {{ stats.coverage if stats.coverage is not none else '—' }}
                 </div>
-                <div class="stat-card">
-                    <div class="label">Score</div>
-                    <div class="value">{{ data['score'] }}</div>
-                    <div class="sub">run avg {{ stats.avg_score }}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="label">Bits</div>
-                    <div class="value">{{ data['bits'] }}</div>
-                    <div class="sub">run avg {{ stats.avg_bits }}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="label">Identity</div>
-                    <div class="value">{{ data['identity_perc'] }}%</div>
-                    <div class="sub">run avg {{ stats.avg_identity }}%</div>
-                </div>
-                <div class="stat-card">
-                    <div class="label">Coverage</div>
-                    <div class="value">
-                        {{ stats.coverage if stats.coverage is not none else '—' }}
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="label">Rank in run</div>
-                    <div class="value">#{{ stats.rank }}</div>
-                    <div class="sub">of {{ stats.total }} hits</div>
-                </div>
-            </section>
+            </div>
+            <div class="stat-card">
+                <div class="label">Rank in run</div>
+                <div class="value">#{{ stats.rank }}</div>
+                <div class="sub">of {{ stats.total }} hits</div>
+            </div>
+        </section>
 
             <section class="chart-grid">
                 <div class="chart-card">
@@ -81,17 +80,69 @@
                 </div>
             </section>
 
-            {% if data['description'] %}
-                <section class="row-desc">
-                    <h4>Description</h4>
-                    <p>{{ data['description'] }}</p>
-                </section>
-            {% endif %}
+        {# ── Protein detail card ── #}
+        {% if not desc or not desc['protein_name'] %}
+            <section class="empty-state">
+                <div class="empty-state-mark">🔍</div>
+                <h3>No extra information was found</h3>
+                <p>Please contact admins for more information</p>
+            </section>
+        {% else %}
+            <section class="protein-card">
+                <div class="protein-card__header">
+                    <div>
+                        <h3>{{ desc['protein_name'] or data['protein_name'] }}</h3>
+                        <p class="protein-card__sub">
+                            <em>{{ desc['organism_name'] or '—' }}</em>
+                            {% if desc['species'] %}&nbsp;·&nbsp;<em>{{ desc['species'] }}</em>{% endif %}
+                        </p>
+                    </div>
+                    {% if desc['family'] %}
+                        <span class="badge">{{ desc['family'] }}</span>
+                    {% endif %}
+                </div>
 
-            <p style="margin-top:24px;">
-                <a class="btn-ghost" href="{{ url_for('seq200blast') }}">← Back
-                    to results</a>
-            </p>
+                <div class="protein-card__body">
+                    <p class="protein-card__label">Function</p>
+                    <p class="protein-card__function">
+                        {{ desc['protein_function'] or desc['description'] or '—' }}
+                    </p>
+                </div>
+
+                <div class="protein-card__meta">
+                    <div class="protein-card__meta-cell">
+                        <p class="protein-card__label">Sex</p>
+                        <p>{{ desc['sex'] or '—' }}</p>
+                    </div>
+                    <div class="protein-card__meta-cell">
+                        <p class="protein-card__label">Species</p>
+                        <p><em>{{ desc['species'] or '—' }}</em></p>
+                    </div>
+                </div>
+
+                {% if desc['sequence'] %}
+                    <div class = "container">
+                    <div class="protein-card__seq">
+                        <p class="protein-card__label">Sequence</p>
+                        <pre id="seq-display"></pre>
+                    </div>
+                    </div>
+                {% endif %}
+            </section>
+
+            <script>
+                const desc = {{ desc | tojson | safe }};
+                const seqEl = document.getElementById('seq-display');
+                if (seqEl && desc.sequence) {
+                    const chunks = desc.sequence.match(/.{1,10}/g) || [];
+                    seqEl.textContent = chunks.join(' ');
+                }
+            </script>
         {% endif %}
-    </main>
+
+        <p style="margin-top:24px;">
+            <a class="btn-ghost" href="{{ url_for('seq200blast') }}">← Back to results</a>
+        </p>
+    {% endif %}
+</main>
 {% endblock %}
