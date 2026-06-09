@@ -66,8 +66,9 @@ def query(sequence : str, seq_id):
             insert_raw.column['bits'] = hsp.bits
             insert_raw.column['identity_perc'] = hsp.identities
             insert_raw.column['score'] = hsp.score
-            insert_raw.column["coverage"] = (hsp.align_length / blast_record.query_length * 100) \
-                    if hsp.align_length > 0 else 0
+            insert_raw.column["coverage"] = (hsp.query_span /
+                                             blast_record.query_length * 100) \
+                    if hsp.query_span > 0 else 0
             insert_raw.column['protein_name'] = description.replace(
                 organism, "").strip()
             insert_raw.insert()
