@@ -3,7 +3,9 @@ import base64
 import matplotlib
 
 from database_config import db
-from database_manager import InputTable, RawBlastTable, OrganismTable, ProteinTable
+from database_manager import InputTable, RawBlastTable, OrganismTable, \
+    ProteinTable
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -85,14 +87,14 @@ def make_chart(fig):
 
 def render_row_charts(chart_data):
     charts = {}
-    
+
     # 1. Identity pie chart
     ident = chart_data["identity"] or 0
     fig, ax = plt.subplots()
     ax.pie([ident, 100 - ident], colors=["#3a5a40", "#d8d3c4"],
            labels=[f"{ident}%", ""])
     charts["identity"] = make_chart(fig)
-    
+
     # 2. This hit vs run average (grouped bars)
     cmp = chart_data["compare"]
     fig, ax = plt.subplots()
@@ -105,7 +107,7 @@ def render_row_charts(chart_data):
     ax.set_xticklabels(cmp["labels"])
     ax.legend()
     charts["compare"] = make_chart(fig)
-    
+
     # 3. Top hits by score (horizontal bars)
     th = chart_data["top_hits"]
     colors = ["#588157" if label == th["current"] else "#a3b18a"
@@ -114,11 +116,11 @@ def render_row_charts(chart_data):
     ax.barh(th["labels"], th["scores"], color=colors)
     ax.invert_yaxis()  # puts the first one at the top
     charts["top_hits"] = make_chart(fig)
-    
+
     return charts
 
 
-def render_data_desc(hit_id, query_id) -> dict :
+def render_data_desc(hit_id, query_id) -> dict:
     """
     Collect information about a hit to display in the description.
     :param query_id from filtered_blast:
@@ -143,10 +145,12 @@ def render_data_desc(hit_id, query_id) -> dict :
         "species": None,
         "sequence": None,
     }
-    #collect Organism and Protein Name
+    # collect Organism and Protein Name
     cur = db.cursor()
     collect_raw = RawBlastTable(cur)
-    collected = collect_raw.custom_query("Select protein_name, organism_name from filtered_blast where id = %s;",params=(hit_id,),returns=True)
+    collected = collect_raw.custom_query(
+        "Select protein_name, organism_name from filtered_blast where id = %s;",
+        params=(hit_id,), returns=True)
     if len(collected) == 0:
         print(f"Hit {hit_id} not found in database")
         book["protein_name"] = 'ERROR RETRIEVING INFORMATION'
@@ -158,10 +162,12 @@ def render_data_desc(hit_id, query_id) -> dict :
 
     cur.close()
 
-    #collect Taxonomy
+    # collect Taxonomy
     cur = db.cursor()
     collect_tax = OrganismTable(cur)
-    collected_tax = collect_tax.custom_query("Select family, genus, species from organism where organism_name = %s;",params=(book["organism_name"],),returns=True)
+    collected_tax = collect_tax.custom_query(
+        "Select family, genus, species from organism where organism_name = %s;",
+        params=(book["organism_name"],), returns=True)
 
     if len(collected_tax) == 0:
         book["family"] = 'ERROR RETRIEVING INFORMATION'
@@ -173,20 +179,24 @@ def render_data_desc(hit_id, query_id) -> dict :
         book["species"] = collected_tax[0][2]
     cur.close()
 
-    #collect function
+    # collect function
     cur = db.cursor()
     collect_func = ProteinTable(cur)
-    collected_func = collect_func.custom_query("select protein_function from protein where protein_name = %s;",params=(book["protein_name"],),returns=True)
+    collected_func = collect_func.custom_query(
+        "select protein_function from protein where protein_name = %s;",
+        params=(book["protein_name"],), returns=True)
     if len(collected_func) == 0:
         book["protein_function"] = 'ERROR RETRIEVING INFORMATION'
     else:
         book["protein_function"] = collected_func[0][0]
     cur.close()
 
-    #collect sequence
+    # collect sequence
     cur = db.cursor()
     collect_input = InputTable(cur)
-    collected_input = collect_input.custom_query("select sequence from input where run_id = %s;",params=(query_id,),returns=True)
+    collected_input = collect_input.custom_query(
+        "select sequence from input where run_id = %s;", params=(query_id,),
+        returns=True)
     if len(collected_input) == 0:
         book["sequence"] = 'ERROR RETRIEVING INFORMATION'
     else:

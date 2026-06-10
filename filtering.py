@@ -1,7 +1,8 @@
 from database_config import db
-from database_manager import InputTable, RawBlastTable, \
-    ProteinTable, FilteredBlast, OrganismTable
-from Bio import Entrez , SeqIO
+from database_manager import (
+    RawBlastTable, ProteinTable, FilteredBlast, OrganismTable
+)
+from Bio import Entrez
 import requests
 from time import sleep
 
@@ -9,14 +10,23 @@ from retrieve_protein import organism
 
 Entrez.email = "mmj.guillorit@student.han.nl"
 
-def evaluate(e_value : float, bit_score : float,score : int, identity : int) -> bool:
+
+def evaluate(
+    e_value: float,
+    bit_score: float,
+    score: int,
+    identity: int,
+    coverage :float
+) -> bool:
     """
-    Evaluate a blast results viability and decide if it is to be included in filtered blast
-    :param identity:
-    :param e_value:
-    :param bit_score:
-    :param score:
-    :return: True is the result passes all tests, False otherwise
+    Evaluate a BLAST result's viability and decide if it is to be included
+    in filtered_blast.
+
+    :param e_value: E-value of the BLAST hit
+    :param bit_score: Bit score of the BLAST hit
+    :param score: Raw score of the BLAST hit
+    :param identity: Identity percentage of the BLAST hit
+    :return: True if the result passes all tests, False otherwise
     """
     if e_value < 1e-30:
         return False
@@ -26,37 +36,54 @@ def evaluate(e_value : float, bit_score : float,score : int, identity : int) -> 
         return False
     if identity < 50:
         return False
+    if coverage < 20:
+        return False
     return True
 
 
-def select_read(qid:str):
+def select_read(qid: str):
     """
+    Select a specified sequence based on the query id entered.
 
-    :return: select a specified sequence based on the query id entered
+    :param qid: The run_id to query
+    :return: Query results for the specified run_id
     """
     cur = db.cursor(dictionary=True)
     cur_select = RawBlastTable(cur)
-    contents = cur_select.custom_query("select * from raw_blast where run_id = qid;", True)
-    # for row in enumerate(contents):
+    contents = cur_select.custom_query(
+        "select * from raw_blast where run_id = qid;", True
+    )
     cur.close()
     return contents
 
 
 def filter_raw() -> tuple:
     """
+    Filter raw BLAST results and insert passing rows into filtered_blast.
 
-    :return: A list op dictionaries with all the contents of RAW blast
+    :return: A list of dictionaries with all contents of raw_blast
     """
+    print('connecting..........')
     cur = db.cursor(dictionary=True)
     cur_select = RawBlastTable(cur)
-    contents = cur_select.custom_query("select * from raw_blast;",True)
+    contents = cur_select.custom_query("select * from raw_blast;", True)
     cur.close()
+    i = 0
     cur = db.cursor(dictionary=True)
     cur_add = FilteredBlast(cur)
     for row in contents:
+        i+=1
+        if i % 1000 == 0:
+            print(f"{i//100}% done ")
         if row["run_id"] == '-':
             continue
-        if evaluate(float(row['e_value']),float(row['bits']),int(row['score']),int(row['identity_perc'])):
+        if evaluate(
+            float(row['e_value']),
+            float(row['bits']),
+            int(row['score']),
+            int(row['identity_perc']),
+            float(row['coverage'])
+        ):
             cur_add.column['run_id'] = row['run_id']
             cur_add.column['e_value'] = row["e_value"]
             cur_add.column['accession_code'] = row["accession_code"]
@@ -70,18 +97,24 @@ def filter_raw() -> tuple:
             cur_add.insert()
     db.commit()
     cur.close()
-
+    print('done')
     return contents
 
 
 def seek_protein():
+    """
+    Look up each distinct protein in filtered_blast and insert or update
+    the protein table with its function.
+    """
     cur = db.cursor(dictionary=True)
     cur_select = RawBlastTable(cur)
-    contents = cur_select.custom_query("select distinct id , protein_name, accession_code from filtered_blast where accession_code != '-';",True)
-    # cur.close()
+    contents = cur_select.custom_query(
+        "select distinct id, protein_name, accession_code "
+        "from filtered_blast where accession_code != '-';",
+        True
+    )
     already_in = set()
 
-#     cur = db.cursor(dictionary=True)
     for row in contents:
         add = ProteinTable(cur)
 
@@ -106,13 +139,13 @@ def seek_protein():
             add.column["protein_name"] = row["protein_name"]
             add.column["hit_id"] = str(row["id"])
             add.column["protein_function"] = get_protein_function(
-                row["protein_name"])
+                row["protein_name"]
+            )
             add.insert()
             db.commit()
             sleep(0.33)
 
     cur.close()
-    return
 
 
 def get_protein_function(protein_name: str) -> str | None:
@@ -120,14 +153,13 @@ def get_protein_function(protein_name: str) -> str | None:
     Look up a protein's function using the UniProt REST API.
 
     Args:
-        protein_name: Common name or gene name (e.g. "BRCA1", "insulin", "p53")
+        protein_name: Common name or gene name
 
     Returns:
         A string describing the protein's function, or None if not found.
     """
     base = "https://rest.uniprot.org/uniprotkb"
 
-    # search for the protein and grab the top result
     try:
         search_resp = requests.get(
             f"{base}/search",
@@ -144,22 +176,21 @@ def get_protein_function(protein_name: str) -> str | None:
         if not results:
             return "NO DATA ON THIS PROTEIN"
 
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP error: {e}")
+    except requests.exceptions.HTTPError as error:
+        print(f"HTTP error: {error}")
         return 'SEARCH ERROR'
-    except requests.exceptions.ConnectionError as e:
-        print(f"Connection error: {e}")
+    except requests.exceptions.ConnectionError as error:
+        print(f"Connection error: {error}")
         return 'SEARCH ERROR'
-    except requests.exceptions.Timeout as e:
-        print(f"Request timed out: {e}")
+    except requests.exceptions.Timeout as error:
+        print(f"Request timed out: {error}")
         return 'Time out request'
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
+    except requests.exceptions.RequestException as error:
+        print(f"Request failed: {error}")
         return 'SEARCH ERROR'
 
     accession = results[0]["primaryAccession"]
 
-    # fetch the full entry to extract the function annotation
     entry_resp = requests.get(
         f"{base}/{accession}",
         params={"fields": "cc_function", "format": "json"},
@@ -176,7 +207,10 @@ def get_protein_function(protein_name: str) -> str | None:
 
 
 def seek_tax():
-    # Pre-populate already_in from existing DB records to survive restarts
+    """
+    Fetch taxonomy data for each distinct organism in filtered_blast and
+    insert or update the organism table accordingly.
+    """
     cur = db.cursor(dictionary=True)
     existing = OrganismTable(cur).custom_query(
         "SELECT organism_name FROM organism;",
@@ -184,89 +218,92 @@ def seek_tax():
     )
     already_in = {row["organism_name"] for row in existing}
 
-    # Fetch distinct organisms to process
     blast_cur = RawBlastTable(cur)
     contents = blast_cur.custom_query(
         "SELECT DISTINCT id, organism_name, accession_code "
         "FROM filtered_blast WHERE accession_code != '-';",
         returns=True
     )
-    # cur.close()
-    #
-    # cur = db.cursor(dictionary=True)
+
     for row in contents:
-        organism = row["organism_name"]
+        organism_name = row["organism_name"]
         row_id = str(row["id"])
 
         add = OrganismTable(cur)
 
         try:
-            if organism in already_in:
+            if organism_name in already_in:
                 result = add.custom_query(
-                    "SELECT hit_id FROM organism WHERE organism_name = %s;",
-                    params=(organism),
+                    "SELECT hit_id FROM organism "
+                    "WHERE organism_name = %s;",
+                    params=(organism_name),
                     returns=True
                 )
                 if not result:
-                    print(f"Warning: '{organism}' in already_in but not found in DB, skipping.")
+                    print(
+                        f"Warning: '{organism_name}' in already_in "
+                        "but not found in DB, skipping."
+                    )
                     continue
 
                 hit_ids = result[0]["hit_id"].split(",")
 
-                # Guard against duplicate IDs across runs
                 if row_id not in hit_ids:
                     hit_ids.append(row_id)
                     updated = ",".join(hit_ids)
                     add.custom_query(
-                        "UPDATE organism SET hit_id = %s WHERE organism_name = %s;",
-                        params=(updated, organism),
+                        "UPDATE organism SET hit_id = %s "
+                        "WHERE organism_name = %s;",
+                        params=(updated, organism_name),
                         returns=False
                     )
                     db.commit()
 
             else:
-                print(f"New organism: {organism}")
-                already_in.add(organism)
+                print(f"New organism: {organism_name}")
+                already_in.add(organism_name)
 
                 try:
                     tax = get_taxonomy(row["accession_code"])
                 except (RuntimeError, ValueError) as error:
-                    print(f"Skipping '{organism}': taxonomy fetch failed — {error}")
+                    print(
+                        f"Skipping '{organism_name}': "
+                        f"taxonomy fetch failed — {error}"
+                    )
                     continue
 
-                add.column["organism_name"] = organism
+                add.column["organism_name"] = organism_name
                 add.column["family"] = tax["family"]
                 add.column["genus"] = tax["genus"]
                 add.column["species"] = tax["species"]
                 add.column["hit_id"] = row_id
-                print(organism,tax["family"],tax["genus"],tax["species"],row_id)
                 add.insert()
                 db.commit()
 
                 # Respect NCBI rate limit (max 3 requests/sec)
                 sleep(0.34)
+
         except Exception as error:
             print(f"Unexpected error processing row {row}: {error}")
             db.rollback()
-            
-    # Close cursor after loop is done
-    cur.close()
-    return
 
-def get_taxonomy(accession_code: str ) -> dict:
+    cur.close()
+
+
+def get_taxonomy(taxid: str) -> dict:
     """
     Retrieve taxonomy information from NCBI Taxonomy.
 
     Parameters
     ----------
-    accession_code : str
+    taxid : str
         NCBI Taxonomy ID (e.g. "9606" for Homo sapiens)
 
     Returns
     -------
     dict
         {
-            "accession_code": ...,
+            "taxid": ...,
             "organism_name": ...,
             "species": ...,
             "genus": ...,
@@ -277,39 +314,43 @@ def get_taxonomy(accession_code: str ) -> dict:
     Raises
     ------
     ValueError
-        If no record is found for the given accession_code
+        If no record is found for the given taxid
     RuntimeError
         If the NCBI request fails
     """
-
     try:
-        with Entrez.efetch(db="taxonomy", id=accession_code, retmode="xml") as handle:
+        with Entrez.efetch(
+            db="taxonomy", id=taxid, retmode="xml"
+        ) as handle:
             records = Entrez.read(handle)
     except Exception as e:
-        raise RuntimeError(f"Failed to fetch taxonomy for accession_code '{accession_code}': {e}") from e
+        raise RuntimeError(
+            f"Failed to fetch taxonomy for taxid '{taxid}': {e}"
+        ) from e
 
     if not records:
-        raise ValueError(f"No taxonomy record found for accession_code '{accession_code}'")
+        raise ValueError(
+            f"No taxonomy record found for taxid '{taxid}'"
+        )
 
     record = records[0]
 
     taxonomy = {
-        "accession_code": record.get("TaxId") or "No TaxId Found",
-        "organism_name": record.get(
-            "ScientificName") or "No Organism Name Found",
+        "taxid": record.get("TaxId") or "No TaxId Found",
+        "organism_name": (
+            record.get("ScientificName") or "No Organism Name Found"
+        ),
         "species": "No Species Found",
         "genus": "No Genus Found",
         "family": "No Family Found",
         "class": "No Class Found",
     }
 
-    # If the queried taxon itself is species rank, capture it directly
     if record.get("Rank") == "species":
         scientific_name = record.get("ScientificName")
         if scientific_name:
             taxonomy["species"] = scientific_name
 
-    # Walk lineage to fill in ranks
     for node in record.get("LineageEx", []):
         rank = node.get("Rank")
         name = node.get("ScientificName")
@@ -327,5 +368,3 @@ def get_taxonomy(accession_code: str ) -> dict:
             taxonomy["class"] = name
 
     return taxonomy
-
-seek_tax()
