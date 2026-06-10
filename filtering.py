@@ -6,8 +6,6 @@ from Bio import Entrez
 import requests
 from time import sleep
 
-from retrieve_protein import organism
-
 Entrez.email = "mmj.guillorit@student.han.nl"
 
 
