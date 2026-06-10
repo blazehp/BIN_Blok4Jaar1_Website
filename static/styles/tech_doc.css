@@ -14,8 +14,6 @@
     --risk: #CC1F1F;
     --teal: #1EC7AD;
 
-    --warn: #9a3b2e;
-    --warn-bg: #f6e4df;
     --code-bg: #20231d;
     --code-ink: #e7e3d4;
 
@@ -162,11 +160,6 @@
     margin-top: 2px;
 }
 
-.td .aside {
-    font-style: italic;
-    color: var(--muted);
-}
-
 .td a.inline {
     color: var(--accent);
 }
@@ -233,7 +226,7 @@
 }
 
 /* ---- callouts ---- */
-.td .note, .td .warn {
+.td .note {
     padding: 13px 18px;
     margin: 16px 0;
     font-size: 16px;
@@ -243,16 +236,6 @@
 .td .note {
     background: #eef2e8;
     border-left: 4px solid var(--accent-br);
-}
-
-.td .warn {
-    background: var(--warn-bg);
-    border-left: 4px solid var(--warn);
-}
-
-.td .warn b {
-    font-family: var(--display);
-    color: var(--warn);
 }
 
 .td .note b {

@@ -16,8 +16,9 @@ if PORT is None:
 if PORT == 3000:
     write_env()
 
-from quart import Quart, render_template, request
+from quart import Quart, render_template, request, redirect
 from database_config import db
+from filtering import filter_raw
 from BLAST import query
 from database_manager import FilteredBlast
 from quart_wtf import QuartForm, CSRFProtect
@@ -178,7 +179,7 @@ async def seq200blast(row_id):
 
 @app.route('/self-blast')
 async def self_blast():
-    return await render_template('/blast/self_blast.html')
+    return redirect("https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome")
 
 
 @app.route('/docs')
@@ -248,6 +249,12 @@ async def run_blast():
     await loop.run_in_executor(None, blast_querying)
     return "Blasting..."
 
+@app.route('/run_filter', methods=["GET"])
+async def run_filter():
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, filter_raw)
+    return "Filtering..."
+
 
 @app.route("/_creds", methods=["GET"])
 async def _creds():
@@ -286,213 +293,85 @@ if __name__ == '__main__':
     
     # -- Input table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS input
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    sequence
-                    longtext
-                    NOT
-                    NULL,
-                    run_id
-                    varchar
-                (
-                    255
-                ),
-                    -- Constraints
-                    UNIQUE
-                (
-                    run_id
-                )
-                    );
-                """)
+    CREATE TABLE IF NOT EXISTS input (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sequence LONGTEXT NOT NULL,
+        run_id VARCHAR(255),
+    
+        -- Constraints
+        UNIQUE (run_id)
+    );
+    """)
     
     # -- Raw Blast table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS raw_blast
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    run_id
-                    varchar
-                (
-                    255
-                ) NOT NULL,
-
-                    e_value varchar
-                (
-                    255
-                ) NOT NULL,
-                    accession_code varchar
-                (
-                    255
-                ) NOT NULL,
-                    protein_name varchar
-                (
-                    255
-                ) NOT NULL,
-                    organism_name varchar
-                (
-                    255
-                ) NOT NULL,
-                    score float
-                (
-                    24
-                ) NOT NULL,
-                    description varchar
-                (
-                    2500
-                ) NOT NULL,
-                    bits float
-                (
-                    24
-                ) NOT NULL,
-                    identity_perc float
-                (
-                    24
-                ) NOT NULL,
-                    converage float
-                (
-                    24
-                ),
-                    -- Constraints
-                    CONSTRAINT query_id FOREIGN KEY
-                (
-                    run_id
-                )
-                    REFERENCES input
-                (
-                    run_id
-                )
-                    );
-                """)
+        CREATE TABLE IF NOT EXISTS raw_blast (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        run_id VARCHAR(255) NOT NULL,
+        e_value VARCHAR(255) NOT NULL,
+        accession_code VARCHAR(255) NOT NULL,
+        protein_name VARCHAR(255) NOT NULL,
+        organism_name VARCHAR(255) NOT NULL,
+        score FLOAT NOT NULL,
+        description VARCHAR(2500) NOT NULL,
+        bits FLOAT NOT NULL,
+        identity_perc FLOAT NOT NULL,
+    
+        -- Constraints
+        CONSTRAINT query_id
+        FOREIGN KEY (run_id) REFERENCES input (run_id)
+    );
+    """)
     
     # -- Filtered Blast table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS filtered_blast
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    run_id
-                    varchar
-                (
-                    255
-                ) NOT NULL,
-
-                    e_value varchar
-                (
-                    255
-                ) NOT NULL,
-                    accession_code varchar
-                (
-                    255
-                ) NOT NULL,
-                    protein_name varchar
-                (
-                    255
-                ) NOT NULL,
-                    organism_name varchar
-                (
-                    255
-                ) NOT NULL,
-                    score float
-                (
-                    24
-                ) NOT NULL,
-                    description varchar
-                (
-                    2500
-                ) NOT NULL,
-                    bits float
-                (
-                    24
-                ) NOT NULL,
-                    identity_perc float
-                (
-                    24
-                ) NOT NULL,
-                    converage float
-                (
-                    24
-                ),
-                    -- Constraints
-                    CONSTRAINT q_id FOREIGN KEY
-                (
-                    run_id
-                )
-                    REFERENCES input
-                (
-                    run_id
-                )
-                    );
-                """)
+    CREATE TABLE IF NOT EXISTS filtered_blast (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        run_id VARCHAR(255) NOT NULL,
+        e_value VARCHAR(255) NOT NULL,
+        accession_code VARCHAR(255) NOT NULL,
+        protein_name VARCHAR(255) NOT NULL,
+        organism_name VARCHAR(255) NOT NULL,
+        score FLOAT NOT NULL,
+        description VARCHAR(2500) NOT NULL,
+        bits FLOAT NOT NULL,
+        identity_perc FLOAT NOT NULL,
+    
+        -- Constraints
+        CONSTRAINT q_id
+        FOREIGN KEY (run_id) REFERENCES input (run_id)
+    );
+    """)
     
     # -- Protein table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS protein
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    protein_name
-                    varchar
-                (
-                    255
-                ) NOT NULL,
-                    protein_function varchar
-                (
-                    2500
-                ),
-                    hit_id int
-                (
-                    255
-                ) NOT NULL
-                    );
-                """)
+    CREATE TABLE IF NOT EXISTS protein (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        protein_name VARCHAR(255) NOT NULL,
+        protein_function VARCHAR(2500),
+        hit_id INT NOT NULL,
+    
+        -- Constraints
+        CONSTRAINT prot_blast_hit
+        FOREIGN KEY (hit_id) REFERENCES filtered_blast (id)
+    );
+    """)
     
     # -- Organism table
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS organism
-                (
-                    id
-                    int
-                    PRIMARY
-                    KEY
-                    AUTO_INCREMENT,
-                    organism_name
-                    varchar
-                (
-                    255
-                ) NOT NULL,
-                    family varchar
-                (
-                    255
-                ),
-                    sex varchar
-                (
-                    255
-                ),
-                    species varchar
-                (
-                    255
-                ) NOT NULL,
-                    hit_id int
-                (
-                    255
-                ) NOT NULL
-                    );
-                """)
+    CREATE TABLE IF NOT EXISTS organism (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        organism_name VARCHAR(255) NOT NULL,
+        family VARCHAR(255),
+        sex VARCHAR(255),
+        species VARCHAR(255) NOT NULL,
+        hit_id INT NOT NULL,
+    
+         -- Constraints
+        CONSTRAINT org_blast_hit
+        FOREIGN KEY (hit_id) REFERENCES filtered_blast (id)
+    );
+    """)
     
     # Close connection after table creation
     cur.close()

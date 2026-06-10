@@ -1,8 +1,7 @@
 import pandas as pd
 import asyncio
-from Bio import Blast, UniProt
+from Bio import Blast
 from Bio.Blast import NCBIXML, NCBIWWW
-from openpyxl.descriptors import sequence
 
 from database_config import db
 from database_manager import InputTable, RawBlastTable

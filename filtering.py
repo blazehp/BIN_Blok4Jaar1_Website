@@ -66,7 +66,7 @@ def filter_raw() -> tuple:
             cur_add.column['bits'] = row["bits"]
             cur_add.column['description'] = row["description"]
             cur_add.column['identity_perc'] = row["identity_perc"]
-            cur_add.column['coverage'] = 0
+            cur_add.column['coverage'] = row["coverage"]
             cur_add.insert()
     db.commit()
     cur.close()
@@ -253,20 +253,20 @@ def seek_tax():
     cur.close()
     return
 
-def get_taxonomy(taxid: str ) -> dict:
+def get_taxonomy(accession_code: str ) -> dict:
     """
     Retrieve taxonomy information from NCBI Taxonomy.
 
     Parameters
     ----------
-    taxid : str
+    accession_code : str
         NCBI Taxonomy ID (e.g. "9606" for Homo sapiens)
 
     Returns
     -------
     dict
         {
-            "taxid": ...,
+            "accession_code": ...,
             "organism_name": ...,
             "species": ...,
             "genus": ...,
@@ -277,24 +277,24 @@ def get_taxonomy(taxid: str ) -> dict:
     Raises
     ------
     ValueError
-        If no record is found for the given taxid
+        If no record is found for the given accession_code
     RuntimeError
         If the NCBI request fails
     """
 
     try:
-        with Entrez.efetch(db="taxonomy", id=taxid, retmode="xml") as handle:
+        with Entrez.efetch(db="taxonomy", id=accession_code, retmode="xml") as handle:
             records = Entrez.read(handle)
     except Exception as e:
-        raise RuntimeError(f"Failed to fetch taxonomy for taxid '{taxid}': {e}") from e
+        raise RuntimeError(f"Failed to fetch taxonomy for accession_code '{accession_code}': {e}") from e
 
     if not records:
-        raise ValueError(f"No taxonomy record found for taxid '{taxid}'")
+        raise ValueError(f"No taxonomy record found for accession_code '{accession_code}'")
 
     record = records[0]
 
     taxonomy = {
-        "taxid": record.get("TaxId") or "No TaxId Found",
+        "accession_code": record.get("TaxId") or "No TaxId Found",
         "organism_name": record.get(
             "ScientificName") or "No Organism Name Found",
         "species": "No Species Found",

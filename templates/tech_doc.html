@@ -125,7 +125,6 @@
                         <li><strong>Filter</strong> → <code>filtering.filter_raw()</code>
                             keeps only the confident hits and copies them into
                             <code>filtered_blast</code>.
-                            <span class="aside">*This is the table the website actually serves.</span>
                         </li>
                         <li><strong>Retrieval</strong> →
                             <code>seek_protein()</code> and
@@ -233,7 +232,6 @@
                         <li><strong><code>delete_table()</code></strong> →
                             drops tables in
                             dependency order.
-                            <span class="aside">*DANGER: only for a full wipe.</span>
                         </li>
                     </ul>
                 </section>
@@ -296,7 +294,6 @@
                             everything once any filter is set.
                         </li>
                     </ol>
-                    <p class="aside">
                         *Why filter in Python instead of SQL? Because fetching
                         once and
                         filtering in memory means no user input ever touches a
@@ -362,7 +359,6 @@
                         tuples into a list of dicts ( column name → value ) so
                         the template
                         can address cells by name.
-                        <span class="aside">*That whitelist is the thing keeping the f-string query safe.</span>
                     </p>
 
                     <h3><span class="badge get">[GET]</span> <span
@@ -373,6 +369,16 @@
                         and blocking, this route offloads it to a thread with
                         <code>run_in_executor()</code> and immediately returns
                         <code>"Blasting..."</code> so the request doesn't hang.
+                    </p>
+
+                    <h3><span class="badge get">[GET]</span> <span
+                            class="route">/run_filter</span></h3>
+                    <p>
+                        Filters all Raw BLAST data. Because
+                        <code>filter_raw()</code> is slow
+                        and blocking, this route offloads it to a thread with
+                        <code>run_in_executor()</code> and immediately returns
+                        <code>"Filtering..."</code> so the request doesn't hang.
                     </p>
 
                     <h3><span class="badge risk">[GET]</span> <span
@@ -464,7 +470,6 @@
                             ( <code>%s</code> + a value tuple ). Injection-safe
                             and allows
                             <code>None</code> values.
-                            <span class="aside">*It warns you if any value is <code>None</code>.</span>
                         </li>
                         <li><strong><code>update(position,
                             pvalue)</code></strong> → runs one
@@ -494,19 +499,6 @@
                         their column dict
                         and hand it to the base class.
                     </p>
-
-                    <div class="warn">
-                        <b>Two things to watch.</b> <code>update()</code> and
-                        <code>delete()</code> build their SQL by string
-                        interpolation
-                        ( not placeholders ), so they're <em>not</em>
-                        injection-safe &mdash;
-                        only call them with trusted values. And <code>OrganismTable</code>
-                        defines a <code>"sex"</code> key where it almost
-                        certainly means
-                        <code>"genus"</code>, which clashes with what <code>seek_tax()</code>
-                        writes later.
-                    </div>
                 </section>
 
                 <hr class="section-rule">
@@ -590,14 +582,6 @@
                             single sequence into the <code>input</code> table.
                         </li>
                     </ul>
-                    <p class="aside">
-                        *Heads up: the <code>identity_perc</code> column is
-                        filled from
-                        <code>hsp.identities</code>, which is the raw count of
-                        identical
-                        residues &mdash; not a percentage. Worth converting if
-                        you want a true %.
-                    </p>
                 </section>
 
                 <hr class="section-rule">
@@ -620,7 +604,6 @@
                             clears every threshold ( bit-score, score and
                             identity each ≥ 50 )
                             and passes the e-value test.
-                            <span class="aside">*See the warning below &mdash; the e-value check looks inverted.</span>
                         </li>
                         <li><strong><code>filter_raw()</code></strong> → reads
                             every row from
@@ -689,34 +672,6 @@
                         </li>
                     </ul>
 
-                    <div class="warn">
-                        <b>⚠ Likely inverted e-value filter.</b> <code>evaluate()</code>
-                        does
-                        <code>if e_value &lt; 1e-30: return False</code>, which
-                        rejects the
-                        <em>most</em> significant hits &mdash; smaller e-values
-                        mean
-                        <em>better</em> matches. This almost certainly should
-                        reject hits
-                        whose e-value is too <em>large</em>. Double-check
-                        before trusting the
-                        filtered set.
-                    </div>
-                    <div class="warn">
-                        <b>⚠ Import-time side effects.</b> The module ends with
-                        a bare
-                        <code>seek_tax()</code> call, so simply
-                        <em>importing</em>
-                        <code>filtering</code> kicks off a full taxonomy run.
-                        It also imports
-                        a name from <code>retrieve_protein.py</code>, which
-                        runs its own
-                        network code on import. Both should be guarded behind
-                        <code>if __name__ == "__main__":</code>. Also note
-                        <code>get_taxonomy()</code> is handed an <em>accession
-                        code</em> where
-                        Entrez taxonomy expects a numeric <em>taxon id</em>.
-                    </div>
                 </section>
 
                 <hr class="section-rule">
@@ -737,12 +692,6 @@
                         and organism names. It reads more like a
                         proof-of-concept than part
                         of the live pipeline.
-                    </p>
-                    <p class="aside">
-                        *Because <code>filtering.py</code> imports a name from
-                        this file, its
-                        top-level code runs on import. Wrapping the demo in a
-                        <code>main</code> guard avoids surprise network calls.
                     </p>
                 </section>
 
@@ -775,7 +724,6 @@
                             comparison, and the
                             top-10 hits by score with the current hit flagged
                             ).
-                            <span class="aside">*It tolerates the <code>coverage</code> / <code>converage</code> spelling difference by checking both.</span>
                         </li>
                         <li><strong><code>make_chart(fig)</code></strong> →
                             renders a
@@ -859,15 +807,6 @@
                             tree from actual data.
                         </li>
                     </ul>
-                    <div class="warn">
-                        <b>⚠ Filename casing.</b> <code>species_graph()</code>
-                        saves with the
-                        title <code>"Speciestest"</code> ( capital S ), but
-                        <code>analysis.html</code> requests <code>speciestest.svg</code>
-                        ( lowercase ). On a case-sensitive filesystem ( Linux )
-                        the image
-                        won't load until the casing matches.
-                    </div>
                 </section>
 
                 <hr class="section-rule">
@@ -933,7 +872,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="aside">
                         *The coverage column is spelled <code>converage</code>
                         in the schema;
                         <code>build_row_stats()</code> already handles both
@@ -965,7 +903,6 @@
                             username, password and CSRF secret to anyone who
                             asks. Remove it
                             or lock it strictly behind debug-only access.
-                            <span class="aside">*This is the urgent one.</span>
                         </li>
                         <li><strong>Inverted e-value filter.</strong> <code>evaluate()</code>
                             currently rejects the strongest hits
